@@ -1,37 +1,25 @@
 package library_system.service;
 
 import library_system.domain.Book;
-import java.util.ArrayList;
+import library_system.repository.BookRepository;
+
 import java.util.List;
 
 public class BookService {
-    private List<Book> books = new ArrayList<>();
 
     public void addBook(Book book) {
-        books.add(book);
+        BookRepository.addBook(book);
     }
 
     public List<Book> searchByTitle(String title) {
-        List<Book> result = new ArrayList<>();
-        for (Book b : books) {
-            if (b.getTitle().equalsIgnoreCase(title)) result.add(b);
-        }
-        return result;
+        return BookRepository.findByTitle(title);
     }
 
     public List<Book> searchByAuthor(String author) {
-        List<Book> result = new ArrayList<>();
-        for (Book b : books) {
-            if (b.getAuthor().equalsIgnoreCase(author)) result.add(b);
-        }
-        return result;
+        return BookRepository.findByAuthor(author);
     }
 
     public List<Book> searchByIsbn(String isbn) {
-        List<Book> result = new ArrayList<>();
-        for (Book b : books) {
-            if (b.getIsbn().equals(isbn)) result.add(b);
-        }
-        return result;
+        return BookRepository.findByIsbn(isbn);
     }
 }
