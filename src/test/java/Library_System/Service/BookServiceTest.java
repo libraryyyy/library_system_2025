@@ -1,5 +1,6 @@
 package Library_System.Service;
 
+import library_system.Repository.BookRepository;
 import library_system.domain.Book;
 import library_system.service.BookService;
 import org.junit.jupiter.api.BeforeEach;
@@ -17,6 +18,7 @@ class BookServiceTest {
 
     @BeforeEach
     void setup() {
+        BookRepository.clear();  // ✔ مهم جدًا
         bookService = new BookService();
         book1 = new Book("Java Basics", "John Doe", "111");
         book2 = new Book("Advanced Java", "Jane Doe", "222");
