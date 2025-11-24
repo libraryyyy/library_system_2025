@@ -1,4 +1,4 @@
-package library_system.repository;
+package library_system.Repository;
 
 import library_system.domain.Book;
 import java.util.ArrayList;
