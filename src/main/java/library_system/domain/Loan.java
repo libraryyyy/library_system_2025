@@ -31,7 +31,7 @@ public class Loan {
         this.user = user;
         this.book = book;
         this.borrowedDate = LocalDate.now();
-        this.dueDate = borrowedDate.plusDays(28);
+        this.dueDate = borrowedDate.plusDays(0);
     }
 
     /**

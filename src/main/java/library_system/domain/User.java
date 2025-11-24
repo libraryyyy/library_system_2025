@@ -60,7 +60,25 @@ public class User {
      *
      * @param amount amount to subtract from the fine balance.
      */
-    public void payFine(double amount) {
+    public boolean payFine(double amount) {
+
+        // لا يوجد غرامة للدفع
+        if (fineBalance <= 0) {
+            return false;
+        }
+
+        // مبلغ غير صالح
+        if (amount <= 0) {
+            return false;
+        }
+
+        // لا يمكن دفع أكثر من الغرامة
+        if (amount > fineBalance) {
+            return false;
+        }
+
         fineBalance -= amount;
+        return true;
     }
+
 }

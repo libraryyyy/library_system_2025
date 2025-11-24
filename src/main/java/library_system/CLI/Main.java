@@ -101,7 +101,8 @@ public class Main {
             System.out.println("2. Search Book by Title");
             System.out.println("3. Search Book by Author");
             System.out.println("4. Search Book by ISBN");
-            System.out.println("5. Logout");
+            System.out.println("5. Send Overdue Reminders");
+            System.out.println("6. Logout");
             System.out.print("Choose: ");
 
             String choice = scanner.nextLine();
@@ -119,7 +120,13 @@ public class Main {
                 case "4":
                     searchByIsbn();
                     break;
+
                 case "5":
+                    ReminderService reminder = new ReminderService();
+                    reminder.addObserver(new EmailNotifier());
+
+                    reminder.sendOverdueReminders();
+                    break;                case "6":
                     adminService.logout();
                     adminRunning = false;
                     System.out.println("Logged out from admin.");
@@ -292,19 +299,18 @@ public class Main {
 
     private static void handlePayFine(User user) {
         System.out.println("Your current fine: " + user.getFineBalance());
-        System.out.print("Enter amount to pay: ");
 
-        try {
-            double amount = Double.parseDouble(scanner.nextLine());
-            if (amount <= 0) {
-                System.out.println("Invalid amount.");
-                return;
-            }
-            user.payFine(amount);
+        System.out.print("Enter amount to pay: ");
+        double amount = Double.parseDouble(scanner.nextLine());
+
+        boolean success = user.payFine(amount);
+
+        if (success) {
             System.out.println("Payment successful! Remaining fine: " + user.getFineBalance());
-        } catch (Exception e) {
-            System.out.println("Invalid input.");
+        } else {
+            System.out.println("❌ Invalid amount or no fine to pay.");
         }
+
     }
 
     // =============================== ADD BOOK =============================== //

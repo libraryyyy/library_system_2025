@@ -5,6 +5,8 @@ import library_system.domain.Loan;
 import java.util.ArrayList;
 import java.util.List;
 
+import library_system.domain.Loan;
+
 /**
  * In-memory repository for storing loan records.
  */
@@ -45,4 +47,9 @@ public class LoanRepository {
     public static void clear() {
         loans.clear();
     }
+
+    public static List<Loan> getAllLoans() {
+        return new ArrayList<>(loans);
+    }
+
 }
