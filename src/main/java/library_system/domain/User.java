@@ -80,5 +80,8 @@ public class User {
         fineBalance -= amount;
         return true;
     }
+    public void addFineAmount(int amount) {
+        this.fineBalance += amount;
+    }
 
 }

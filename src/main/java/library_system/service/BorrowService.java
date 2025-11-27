@@ -1,44 +1,54 @@
 package library_system.service;
 
 import library_system.Repository.BookRepository;
+import library_system.Repository.CDRepository;
 import library_system.Repository.LoanRepository;
-import library_system.domain.Book;
-import library_system.domain.Loan;
-import library_system.domain.User;
+import library_system.domain.*;
 
 import java.util.List;
 
 /**
- * Service that handles borrowing operations.
+ * Service to handle borrowing of Books and CDs using Media polymorphism.
  */
 public class BorrowService {
 
-    /**
-     * Attempts to borrow the first available (not borrowed) book with the given title
-     * for the specified user.
-     *
-     * @param user  user who wants to borrow the book.
-     * @param title title of the book to borrow.
-     * @return true if the book is found and borrowed; false otherwise.
-     */
-    public boolean borrow(User user, String title) {
-        Book book = null;
-        List<Book> candidates = BookRepository.findByTitle(title);
+    public boolean borrowBook(User user, String title) {
 
-        for (Book b : candidates) {
+        List<Book> books = BookRepository.findByTitle(title);
+        Book selected = null;
+
+        for (Book b : books) {
             if (!b.isBorrowed()) {
-                book = b;
+                selected = b;
                 break;
             }
         }
 
-        if (book == null) {
-            return false;
+        if (selected == null) return false;
+
+        Loan loan = new Loan(user, selected);
+        LoanRepository.addLoan(loan);
+        selected.setBorrowed(true);
+        return true;
+    }
+
+    public boolean borrowCD(User user, String title) {
+
+        List<CD> cds = CDRepository.findByTitle(title);
+        CD selected = null;
+
+        for (CD cd : cds) {
+            if (!cd.isBorrowed()) {
+                selected = cd;
+                break;
+            }
         }
 
-        Loan loan = new Loan(user, book);
+        if (selected == null) return false;
+
+        Loan loan = new Loan(user, selected);
         LoanRepository.addLoan(loan);
-        book.setBorrowed(true);
+        selected.setBorrowed(true);
         return true;
     }
 }

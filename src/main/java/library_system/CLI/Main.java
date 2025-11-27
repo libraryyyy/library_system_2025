@@ -1,25 +1,16 @@
 package library_system.CLI;
 
-import library_system.Repository.LoanRepository;
-import library_system.domain.Admin;
-import library_system.domain.Book;
-import library_system.domain.Loan;
-import library_system.domain.User;
-import library_system.Repository.AdminRepository;
-import library_system.Repository.UserRepository;
+import library_system.Repository.*;
+import library_system.domain.*;
+import library_system.notification.EmailNotifier;
 import library_system.service.*;
+import library_system.service.OverdueReportService;
 
 import java.util.List;
 import java.util.Scanner;
 
 /**
- * Full CLI for Library System (Sprint 1 + Sprint 2)
- * Includes:
- *  - Admin login + admin menu
- *  - User registration/login + user menu
- *  - Borrowing system
- *  - Search system (title + author + ISBN)
- *  - View loans + pay fines
+ * Full CLI for Library System (Sprint 1 → Sprint 5)
  */
 public class Main {
 
@@ -29,8 +20,13 @@ public class Main {
     private static final UserService userService = new UserService();
     private static final BookService bookService = new BookService();
     private static final BorrowService borrowService = new BorrowService();
+    private static final OverdueReportService overdueReportService = new OverdueReportService();
+    private static final ReminderService reminderService = new ReminderService();
 
     public static void main(String[] args) {
+
+        // Add default email observer
+        reminderService.addObserver(new EmailNotifier());
 
         System.out.println("=== Library Management System ===");
 
@@ -68,11 +64,10 @@ public class Main {
         scanner.close();
     }
 
-    // =============================== ADMIN SECTION =============================== //
+    // =============================== ADMIN LOGIN =============================== //
 
     private static void handleAdminLogin() {
         Admin admin = AdminRepository.getAdmin();
-
         boolean success = false;
 
         while (!success) {
@@ -92,15 +87,17 @@ public class Main {
         }
     }
 
+    // =============================== ADMIN MENU =============================== //
+
     private static void adminMenu() {
         boolean adminRunning = true;
 
         while (adminRunning) {
             System.out.println("\n--- Admin Menu ---");
             System.out.println("1. Add Book");
-            System.out.println("2. Search Book by Title");
-            System.out.println("3. Search Book by Author");
-            System.out.println("4. Search Book by ISBN");
+            System.out.println("2. Add CD");
+            System.out.println("3. Search Books");
+            System.out.println("4. Search CDs");
             System.out.println("5. Send Overdue Reminders");
             System.out.println("6. Logout");
             System.out.print("Choose: ");
@@ -109,30 +106,89 @@ public class Main {
 
             switch (choice) {
                 case "1":
-                    handleAddBook();
+                    addBook();
                     break;
+
                 case "2":
-                    searchByTitle();
+                    addCD();
                     break;
+
                 case "3":
-                    searchByAuthor();
+                    searchBooks();
                     break;
+
                 case "4":
-                    searchByIsbn();
+                    searchCDs();
                     break;
 
                 case "5":
-                    ReminderService reminder = new ReminderService();
-                    reminder.addObserver(new EmailNotifier());
+                    reminderService.sendOverdueReminders();
+                    System.out.println("Overdue reminders sent!");
+                    break;
 
-                    reminder.sendOverdueReminders();
-                    break;                case "6":
+                case "6":
                     adminService.logout();
                     adminRunning = false;
                     System.out.println("Logged out from admin.");
                     break;
+
                 default:
                     System.out.println("Invalid option.");
+            }
+        }
+    }
+
+    private static void addBook() {
+        System.out.print("Title: ");
+        String title = scanner.nextLine();
+
+        System.out.print("Author: ");
+        String author = scanner.nextLine();
+
+        System.out.print("ISBN: ");
+        String isbn = scanner.nextLine();
+
+        BookRepository.addBook(new Book(title, author, isbn));
+        System.out.println("Book added successfully.");
+    }
+
+    private static void addCD() {
+        System.out.print("CD Title: ");
+        String title = scanner.nextLine();
+
+        System.out.print("Artist: ");
+        String artist = scanner.nextLine();
+
+        CDRepository.addCD(new CD(title, artist));
+        System.out.println("CD added successfully.");
+    }
+
+    private static void searchBooks() {
+        System.out.print("Enter book title: ");
+        String title = scanner.nextLine();
+
+        var results = BookRepository.findByTitle(title);
+
+        if (results.isEmpty()) System.out.println("No books found.");
+        else {
+            System.out.println("\n--- Books ---");
+            for (Book b : results) {
+                System.out.println("- " + b.getTitle() + " | " + b.getAuthor());
+            }
+        }
+    }
+
+    private static void searchCDs() {
+        System.out.print("Enter CD title: ");
+        String title = scanner.nextLine();
+
+        var results = CDRepository.findByTitle(title);
+
+        if (results.isEmpty()) System.out.println("No CDs found.");
+        else {
+            System.out.println("\n--- CDs ---");
+            for (CD cd : results) {
+                System.out.println("- " + cd.getTitle() + " | " + cd.getArtist());
             }
         }
     }
@@ -169,113 +225,84 @@ public class Main {
         }
     }
 
+    // =============================== USER MENU =============================== //
+
     private static void userMenu() {
         boolean userRunning = true;
-        User loggedUser = userService.getLoggedUser();
+        User logged = userService.getLoggedUser();
 
         while (userRunning) {
             System.out.println("\n--- User Menu ---");
             System.out.println("1. Search Books");
-            System.out.println("2. Borrow Book");
-            System.out.println("3. View My Loans");
-            System.out.println("4. Pay Fine");
-            System.out.println("5. Logout");
+            System.out.println("2. Search CDs");
+            System.out.println("3. Borrow Book");
+            System.out.println("4. Borrow CD");
+            System.out.println("5. View My Loans");
+            System.out.println("6. View Overdue Report");
+            System.out.println("7. Pay Fine");
+            System.out.println("8. Logout");
             System.out.print("Choose: ");
 
             String option = scanner.nextLine();
 
             switch (option) {
+
                 case "1":
-                    userSearchMenu();
+                    searchBooks();
                     break;
+
                 case "2":
-                    userBorrowBook(loggedUser);
+                    searchCDs();
                     break;
+
                 case "3":
-                    viewUserLoans(loggedUser);
+                    borrowBook(logged);
                     break;
+
                 case "4":
-                    handlePayFine(loggedUser);
+                    borrowCD(logged);
                     break;
+
                 case "5":
+                    viewUserLoans(logged);
+                    break;
+
+                case "6":
+                    System.out.println(overdueReportService.generateReport(logged));
+                    break;
+
+                case "7":
+                    payFine(logged);
+                    break;
+
+                case "8":
                     userService.logout();
                     userRunning = false;
                     System.out.println("Logged out.");
                     break;
+
                 default:
-                    System.out.println("Invalid option!");
+                    System.out.println("Invalid option.");
             }
         }
     }
 
+    // =============================== USER ACTIONS =============================== //
 
-    // =============================== SEARCH SECTION =============================== //
-
-    private static void userSearchMenu() {
-        System.out.println("\n--- Search Menu ---");
-        System.out.println("1. By Title");
-        System.out.println("2. By Author");
-        System.out.println("3. By ISBN");
-        System.out.print("Choose: ");
-
-        switch (scanner.nextLine()) {
-            case "1": searchByTitle(); break;
-            case "2": searchByAuthor(); break;
-            case "3": searchByIsbn(); break;
-            default: System.out.println("Invalid search option.");
-        }
-    }
-
-    private static void searchByTitle() {
-        System.out.print("Enter title: ");
+    private static void borrowBook(User user) {
+        System.out.print("Enter book title: ");
         String title = scanner.nextLine();
 
-        List<Book> books = bookService.searchByTitle(title);
-        printBooks(books);
+        boolean ok = borrowService.borrowBook(user, title);
+        System.out.println(ok ? "Book borrowed!" : "Cannot borrow this book.");
     }
 
-    private static void searchByAuthor() {
-        System.out.print("Enter author: ");
-        String author = scanner.nextLine();
-
-        List<Book> books = bookService.searchByAuthor(author);
-        printBooks(books);
-    }
-
-    private static void searchByIsbn() {
-        System.out.print("Enter ISBN: ");
-        String isbn = scanner.nextLine();
-
-        List<Book> books = bookService.searchByIsbn(isbn);
-        printBooks(books);
-    }
-
-    private static void printBooks(List<Book> books) {
-        if (books.isEmpty()) {
-            System.out.println("No books found.");
-        } else {
-            for (Book b : books) {
-                System.out.println("- " + b.getTitle() + " by " + b.getAuthor() +
-                        " (ISBN: " + b.getIsbn() + ")" +
-                        (b.isBorrowed() ? " [NOT AVAILABLE]" : " [AVAILABLE]"));
-            }
-        }
-    }
-
-
-    // =============================== BORROW SECTION =============================== //
-
-    private static void userBorrowBook(User user) {
-        System.out.print("Enter book title to borrow: ");
+    private static void borrowCD(User user) {
+        System.out.print("Enter CD title: ");
         String title = scanner.nextLine();
 
-        boolean success = borrowService.borrow(user, title);
-
-        if (success) {
-            System.out.println("Book borrowed successfully!");
-        } else {
-            System.out.println("❌ Borrow failed. No available copy.");
-        }
+        boolean ok = borrowService.borrowCD(user, title);
+        System.out.println(ok ? "CD borrowed!" : "Cannot borrow this CD.");
     }
 
     private static void viewUserLoans(User user) {
@@ -287,45 +314,30 @@ public class Main {
         }
 
         System.out.println("\n--- Your Loans ---");
-        for (Loan loan : loans) {
-            System.out.println("- " + loan.getBook().getTitle() +
-                    " | Borrowed: " + loan.getBorrowedDate() +
-                    " | Due: " + loan.getDueDate() +
-                    (loan.isOverdue() ? " ❌ OVERDUE" : " ✔ On time"));
+        for (Loan l : loans) {
+            System.out.println("- " + l.getItem().getTitle() +
+                    " | Borrowed: " + l.getBorrowedDate() +
+                    " | Due: " + l.getDueDate() +
+                    (l.isOverdue() ? " ❌ OVERDUE" : " ✔ On time"));
         }
     }
 
-    // =============================== FINE SECTION =============================== //
-
-    private static void handlePayFine(User user) {
-        System.out.println("Your current fine: " + user.getFineBalance());
-
+    private static void payFine(User user) {
+        System.out.println("Your fine: " + user.getFineBalance());
         System.out.print("Enter amount to pay: ");
-        double amount = Double.parseDouble(scanner.nextLine());
 
-        boolean success = user.payFine(amount);
+        try {
+            double amount = Double.parseDouble(scanner.nextLine());
 
-        if (success) {
-            System.out.println("Payment successful! Remaining fine: " + user.getFineBalance());
-        } else {
-            System.out.println("❌ Invalid amount or no fine to pay.");
+            if (amount <= 0 || amount > user.getFineBalance()) {
+                System.out.println("Invalid amount.");
+            } else {
+                user.payFine(amount);
+                System.out.println("Payment successful. Remaining fine: " + user.getFineBalance());
+            }
+
+        } catch (Exception e) {
+            System.out.println("Invalid input.");
         }
-
-    }
-
-    // =============================== ADD BOOK =============================== //
-
-    private static void handleAddBook() {
-        System.out.print("Title: ");
-        String title = scanner.nextLine();
-
-        System.out.print("Author: ");
-        String author = scanner.nextLine();
-
-        System.out.print("ISBN: ");
-        String isbn = scanner.nextLine();
-
-        bookService.addBook(new Book(title, author, isbn));
-        System.out.println("Book added successfully.");
     }
 }

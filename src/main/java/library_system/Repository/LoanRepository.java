@@ -51,5 +51,4 @@ public class LoanRepository {
     public static List<Loan> getAllLoans() {
         return new ArrayList<>(loans);
     }
-
 }

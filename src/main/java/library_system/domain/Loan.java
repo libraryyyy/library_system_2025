@@ -3,71 +3,40 @@ package library_system.domain;
 import java.time.LocalDate;
 
 /**
- * Represents a loan of a single book by a user.
- * Stores borrowed and due dates and can determine if it is overdue.
+ * Represents a loan of any media item (Book, CD, etc.).
  */
 public class Loan {
 
-    /** User who borrowed the book. */
     private User user;
-
-    /** Borrowed book. */
-    private Book book;
-
-    /** Date when the book was borrowed. */
+    private Media item;
     private LocalDate borrowedDate;
-
-    /** Due date for returning the book (borrowedDate + 28 days). */
     private LocalDate dueDate;
 
-    /**
-     * Creates a new loan for the given user and book.
-     * The due date is automatically set to 28 days after the borrowed date.
-     *
-     * @param user user who borrows the book.
-     * @param book book being borrowed.
-     */
-    public Loan(User user, Book book) {
+    public Loan(User user, Media item) {
         this.user = user;
-        this.book = book;
+        this.item = item;
         this.borrowedDate = LocalDate.now();
-        this.dueDate = borrowedDate.plusDays(0);
+        this.dueDate = borrowedDate.plusDays(item.getBorrowDuration());
     }
 
-    /**
-     * @return the user who borrowed the book.
-     */
-    public User getUser() {
-        return user;
-    }
+    public User getUser() { return user; }
 
-    /**
-     * @return the borrowed book.
-     */
-    public Book getBook() {
-        return book;
-    }
+    public Media getItem() { return item; }
 
-    /**
-     * @return date when the book was borrowed.
-     */
-    public LocalDate getBorrowedDate() {
-        return borrowedDate;
-    }
+    public LocalDate getBorrowedDate() { return borrowedDate; }
 
-    /**
-     * @return due date for the loan.
-     */
-    public LocalDate getDueDate() {
-        return dueDate;
-    }
+    public LocalDate getDueDate() { return dueDate; }
 
-    /**
-     * Checks whether this loan is overdue based on the current system date.
-     *
-     * @return true if the current date is after the due date; false otherwise.
-     */
     public boolean isOverdue() {
         return LocalDate.now().isAfter(dueDate);
+    }
+
+    public int getOverdueDays() {
+        if (!isOverdue()) return 0;
+        return (int) java.time.temporal.ChronoUnit.DAYS.between(dueDate, LocalDate.now());
+    }
+
+    public int calculateFine() {
+        return item.getFineStrategy().calculateFine(getOverdueDays());
     }
 }
