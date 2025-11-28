@@ -99,7 +99,8 @@ public class Main {
             System.out.println("3. Search Books");
             System.out.println("4. Search CDs");
             System.out.println("5. Send Overdue Reminders");
-            System.out.println("6. Logout");
+            System.out.println("6. Unregister User");
+            System.out.println("7. Logout");
             System.out.print("Choose: ");
 
             String choice = scanner.nextLine();
@@ -125,8 +126,14 @@ public class Main {
                     reminderService.sendOverdueReminders();
                     System.out.println("Overdue reminders sent!");
                     break;
-
-                case "6":
+                case "6": {
+                    System.out.print("Enter username to remove: ");
+                    String userToRemove = scanner.nextLine();
+                    String result = adminService.unregisterUser(userToRemove);
+                    System.out.println(result);
+                    break;
+                }
+                case "7":
                     adminService.logout();
                     adminRunning = false;
                     System.out.println("Logged out from admin.");

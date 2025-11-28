@@ -14,33 +14,56 @@ class UserServiceTest {
 
     @BeforeEach
     void setup() {
-        UserRepository.clear();
         userService = new UserService();
+        UserRepository.clear();
+
     }
 
     @Test
-    void testRegisterSuccess() {
-        assertTrue(userService.register("sana", "1234"));
-        assertNotNull(UserRepository.findUser("sana"));
+    void testUserRegistrationSuccess() {
+        boolean success = userService.register("sana", "1234");
+        assertTrue(success, "User registration should succeed for a new username.");
+
+        User stored = UserRepository.findUser("sana");
+        assertNotNull(stored, "User must exist in repository after registration.");
+        assertEquals("sana", stored.getUsername());
+        assertEquals("1234", stored.getPassword());
     }
 
     @Test
-    void testRegisterFailure_DuplicateUser() {
+    void testUserRegistrationFailsIfUsernameExists() {
         userService.register("sana", "1234");
-        assertFalse(userService.register("sana", "9999"));  // duplicate
+
+        boolean success = userService.register("sana", "anotherPass");
+        assertFalse(success, "Registration should fail if username already exists.");
     }
+
+    // ======================================
+    // Login Tests
+    // ======================================
 
     @Test
     void testLoginSuccess() {
         userService.register("sana", "1234");
-        assertTrue(userService.login("sana", "1234"));
-        assertEquals("sana", userService.getLoggedUser().getUsername());
+        boolean login = userService.login("sana", "1234");
+
+        assertTrue(login, "Login should succeed with correct credentials.");
+        assertNotNull(userService.getLoggedUser(), "getLoggedUser() must not return null after login.");
     }
 
     @Test
-    void testLoginFailure() {
+    void testLoginFailsWrongPassword() {
         userService.register("sana", "1234");
-        assertFalse(userService.login("sana", "wrongpass"));
+        boolean login = userService.login("sana", "wrong");
+
+        assertFalse(login, "Login should fail with incorrect password.");
+        assertNull(userService.getLoggedUser(), "No user should be logged in after failed login.");
+    }
+
+    @Test
+    void testLoginFailsNonExistingUser() {
+        boolean login = userService.login("unknown", "1234");
+        assertFalse(login, "Login should fail for non-existing user.");
         assertNull(userService.getLoggedUser());
     }
 

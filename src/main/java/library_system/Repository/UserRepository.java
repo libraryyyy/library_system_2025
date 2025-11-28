@@ -36,6 +36,14 @@ public class UserRepository {
         }
         return null;
     }
+    public static boolean removeUser(String username) {
+        User u = findUser(username);
+        if (u != null) {
+            users.remove(u);
+            return true;
+        }
+        return false;
+    }
 
     /**
      * Clears all users from the repository.
