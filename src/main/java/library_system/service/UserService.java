@@ -1,37 +1,60 @@
 package library_system.service;
 
 import library_system.Repository.UserRepository;
+import library_system.Repository.LoanRepository;
 import library_system.domain.User;
 
-/**
- * Service that manages user registration, login, and session state.
- */
 public class UserService {
 
-    /** Currently logged-in user or null if none. */
     private User loggedUser = null;
 
     /**
      * Registers a new user if the username is not already taken.
-     *
-     * @param username desired username.
-     * @param password desired password.
-     * @return true if registration succeeded; false if username already exists.
      */
-    public boolean register(String username, String password) {
+    public boolean register(String username, String password,String email) {
         if (UserRepository.findUser(username) != null) {
             return false;
         }
-        UserRepository.addUser(new User(username, password));
+
+        UserRepository.addUser(new User(username, password, email));
         return true;
     }
 
+
     /**
-     * Attempts to log in a user with the given credentials.
-     *
-     * @param username entered username.
-     * @param password entered password.
-     * @return true if login is successful; false otherwise.
+     * Unregisters a user ONLY if:
+     * 1. User has NO active loans
+     * 2. User has NO overdue loans
+     * 3. User has NO unpaid fines
+     */
+    public String unregisterUser(User user) {
+
+        // 1. Check active loans
+        if (LoanRepository.hasActiveLoans(user)) {
+            return "Cannot unregister: User has active loans.";
+        }
+
+        // 2. Check overdue loans
+        if (LoanRepository.hasOverdueLoans(user)) {
+            return "Cannot unregister: User has overdue loans.";
+        }
+
+        // 3. Check unpaid fines
+        if (user.getFineBalance() > 0) {
+            return "Cannot unregister: User has unpaid fines.";
+        }
+
+
+
+
+        // 4. Delete user
+        UserRepository.deleteUser(user);
+
+        return "User successfully unregistered.";
+    }
+
+    /**
+     * Login method
      */
     public boolean login(String username, String password) {
         User user = UserRepository.findUser(username);
@@ -42,16 +65,10 @@ public class UserService {
         return false;
     }
 
-    /**
-     * @return the currently logged-in user, or null if none.
-     */
     public User getLoggedUser() {
         return loggedUser;
     }
 
-    /**
-     * Logs out the current user.
-     */
     public void logout() {
         loggedUser = null;
     }

@@ -19,4 +19,9 @@ public class CD extends Media {
     public FineStrategy getFineStrategy() {
         return new CDFineStrategy();
     }
+    @Override
+    public String toString() {
+        return "CD: " + title + " (" + artist + ")";
+    }
+
 }

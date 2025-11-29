@@ -18,4 +18,10 @@ public abstract class Media {
     public abstract int getBorrowDuration();
 
     public abstract FineStrategy getFineStrategy();
+    @Override
+    public String toString() {
+        return this.getClass().getSimpleName() + ": " + title;
+    }
+
+
 }

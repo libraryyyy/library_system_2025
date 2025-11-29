@@ -53,7 +53,9 @@ public class UserRepository {
         users.clear();
     }
 
-
+    public static void deleteUser(User user) {
+        users.remove(user);
+    }
 
 }
 

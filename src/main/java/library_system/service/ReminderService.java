@@ -1,8 +1,7 @@
 package library_system.service;
 
 import library_system.Repository.LoanRepository;
-import library_system.domain.Loan;
-import library_system.domain.User;
+import library_system.domain.*;
 import library_system.notification.Observer;
 
 import java.util.*;
@@ -15,25 +14,40 @@ public class ReminderService {
         observers.add(observer);
     }
 
+    /**
+     * Send reminders to users with overdue items (Books + CDs)
+     */
     public void sendOverdueReminders() {
         List<Loan> allLoans = LoanRepository.getAllLoans();
 
-        Map<User, Integer> overdueMap = new HashMap<>();
+        Map<User, Integer> overdueBooksMap = new HashMap<>();
+        Map<User, Integer> overdueCDsMap = new HashMap<>();
 
         for (Loan loan : allLoans) {
-            if (loan.isOverdue()) {
-                overdueMap.put(
-                        loan.getUser(),
-                        overdueMap.getOrDefault(loan.getUser(), 0) + 1
-                );
+            if (!loan.isOverdue()) continue;
+
+            User user = loan.getUser();
+            if (loan.getItem() instanceof Book) {
+                overdueBooksMap.put(user, overdueBooksMap.getOrDefault(user, 0) + 1);
+            } else if (loan.getItem() instanceof CD) {
+                overdueCDsMap.put(user, overdueCDsMap.getOrDefault(user, 0) + 1);
             }
         }
 
-        for (Map.Entry<User, Integer> entry : overdueMap.entrySet()) {
-            User user = entry.getKey();
-            int count = entry.getValue();
+        Set<User> users = new HashSet<>();
+        users.addAll(overdueBooksMap.keySet());
+        users.addAll(overdueCDsMap.keySet());
 
-            String msg = "You have " + count + " overdue book(s).";
+        for (User user : users) {
+            int books = overdueBooksMap.getOrDefault(user, 0);
+            int cds = overdueCDsMap.getOrDefault(user, 0);
+
+            String msg;
+            if (cds > 0) {
+                msg = "You have " + books + " overdue book(s) and " + cds + " overdue CD(s).";
+            } else {
+                msg = "You have " + books + " overdue book(s).";
+            }
 
             for (Observer observer : observers) {
                 observer.notify(user, msg);

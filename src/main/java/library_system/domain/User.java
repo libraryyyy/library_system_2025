@@ -5,83 +5,32 @@ package library_system.domain;
  */
 public class User {
 
-    /** Username of the user. */
     private String username;
-
-    /** Password of the user. */
     private String password;
-
-    /** Current outstanding fine balance for the user. */
+    private String email;          // ✅ جديد
     private double fineBalance = 0.0;
 
-    /**
-     * Creates a new user with the given credentials.
-     *
-     * @param username user username.
-     * @param password user password.
-     */
-    public User(String username, String password) {
+    public User(String username, String password, String email) {
         this.username = username;
         this.password = password;
+        this.email = email;
     }
 
-    /**
-     * @return the username.
-     */
-    public String getUsername() {
-        return username;
-    }
+    public String getUsername() { return username; }
 
-    /**
-     * @return the password.
-     */
-    public String getPassword() {
-        return password;
-    }
+    public String getPassword() { return password; }
 
-    /**
-     * @return current fine balance.
-     */
-    public double getFineBalance() {
-        return fineBalance;
-    }
+    public String getEmail() { return email; } // ✅ مهم
 
-    /**
-     * Increases the user's fine balance by the given amount.
-     *
-     * @param amount amount to add to the fine balance.
-     */
-    public void addFine(double amount) {
-        fineBalance += amount;
-    }
+    public double getFineBalance() { return fineBalance; }
 
-    /**
-     * Decreases the user's fine balance by the given amount.
-     *
-     * @param amount amount to subtract from the fine balance.
-     */
+    public void setFineBalance(double amount) { this.fineBalance = amount; }
+
+    public void addFine(double amount) { fineBalance += amount; }
+
     public boolean payFine(double amount) {
-
-        // لا يوجد غرامة للدفع
-        if (fineBalance <= 0) {
-            return false;
-        }
-
-        // مبلغ غير صالح
-        if (amount <= 0) {
-            return false;
-        }
-
-        // لا يمكن دفع أكثر من الغرامة
-        if (amount > fineBalance) {
-            return false;
-        }
-
+        if (fineBalance <= 0 || amount <= 0 || amount > fineBalance) return false;
         fineBalance -= amount;
         return true;
     }
-    public void addFineAmount(int amount) {
-        this.fineBalance += amount;
-    }
-
 }

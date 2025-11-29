@@ -6,9 +6,6 @@ import library_system.domain.*;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Builds overdue report for a specific user.
- */
 public class OverdueReportService {
 
     private FineCalculatorService fineCalculator = new FineCalculatorService();
@@ -23,13 +20,15 @@ public class OverdueReportService {
         int cdsCount = 0;
 
         for (Loan loan : userLoans) {
-            if (loan.isOverdue()) {
+            if (loan.isOverdue() && !loan.isReturned()) {
+
                 overdueItems.add(loan);
 
                 int fine = fineCalculator.calculateFine(loan);
                 totalFine += fine;
 
                 Media item = loan.getItem();
+
                 if (item instanceof Book) booksCount++;
                 if (item instanceof CD) cdsCount++;
             }

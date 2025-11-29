@@ -13,6 +13,15 @@ public class CDRepository {
         cds.add(cd);
     }
 
+    public static CD findOneByTitle(String title) {
+        for (CD cd : cds) {
+            if (cd.getTitle().equalsIgnoreCase(title)) {
+                return cd;
+            }
+        }
+        return null;
+    }
+
     public static List<CD> findByTitle(String title) {
         List<CD> result = new ArrayList<>();
         for (CD cd : cds) {
@@ -25,6 +34,10 @@ public class CDRepository {
 
     public static List<CD> getAll() {
         return cds;
+    }
+
+    public static void removeCD(CD cd) {
+        cds.remove(cd);
     }
 
     public static void clear() {

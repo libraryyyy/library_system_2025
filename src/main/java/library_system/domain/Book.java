@@ -22,4 +22,8 @@ public class Book extends Media {
     public FineStrategy getFineStrategy() {
         return new BookFineStrategy();
     }
+    @Override
+    public String toString() {
+        return "Book: " + title + " (" + author + ")";
+    }
 }

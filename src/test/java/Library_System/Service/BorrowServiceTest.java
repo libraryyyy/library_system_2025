@@ -17,15 +17,36 @@ class BorrowServiceTest {
 
     private BorrowService borrowService;
     private User user;
+    private Book book;
 
     @BeforeEach
     void setup() {
         borrowService = new BorrowService();
-        user = new User("sana", "123");
+        user = new User("sana", "123", "sana@example.com");
 
+        Book book = new Book("Java Basics", "John Doe", "111111");
         BookRepository.clear();
         CDRepository.clear();
         LoanRepository.clear();
+    }
+
+    @Test
+    void testCanBorrowWithActiveLoan() {
+        LoanRepository.addLoan(new Loan(user, book));
+        assertFalse(borrowService.canBorrow(user));
+    }
+
+    @Test
+    void testCanBorrowWithOverdueLoan() {
+        Loan loan = new Loan(user, book);
+        loan.setDueDate(LocalDate.now().minusDays(1));
+        LoanRepository.addLoan(loan);
+        assertFalse(borrowService.canBorrow(user));
+    }
+
+    @Test
+    void testCanBorrowWhenAllowed() {
+        assertTrue(borrowService.canBorrow(user));
     }
 
     @Test
@@ -51,6 +72,20 @@ class BorrowServiceTest {
         assertTrue(cd.isBorrowed());
         assertEquals(1, LoanRepository.getUserLoans(user.getUsername()).size());
     }
+
+    @Test
+    void testBorrowCDDueDate() {
+        CD cd = new CD("Hits", "Artist");
+        CDRepository.addCD(cd);
+
+        boolean ok = borrowService.borrowCD(user, "Hits");
+        assertTrue(ok, "Borrowing a CD should succeed.");
+
+        Loan loan = LoanRepository.getUserLoans(user.getUsername()).get(0);
+        LocalDate expectedDue = LocalDate.now().plusDays(cd.getBorrowDuration());
+        assertEquals(expectedDue, loan.getDueDate(), "CD due date should be today + 7 days.");
+    }
+
     @Test
     void testBorrowBlockedDueToUnpaidFines() {
         user.addFine(50);
@@ -60,6 +95,7 @@ class BorrowServiceTest {
         boolean ok = borrowService.borrowBook(user, "Java");
         assertFalse(ok, "User with unpaid fines must not borrow.");
     }
+
     @Test
     void testBorrowBlockedDueToOverdueLoan() throws Exception {
         Book book = new Book("Java", "John", "111");
@@ -81,6 +117,7 @@ class BorrowServiceTest {
         boolean ok = borrowService.borrowBook(user, "C++");
         assertFalse(ok, "User with overdue items cannot borrow.");
     }
+
     @Test
     void testBorrowFailsNoAvailableCopy() {
         Book book = new Book("Java", "John", "111");

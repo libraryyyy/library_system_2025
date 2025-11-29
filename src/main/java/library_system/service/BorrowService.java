@@ -11,77 +11,63 @@ public class BorrowService {
 
     private final OverdueReportService overdueReportService = new OverdueReportService();
 
-    /**
-     * Checks borrow restrictions:
-     * - user must not have overdue items
-     * - user must not have unpaid fines
-     */
-    private boolean canBorrow(User user) {
-        // Unpaid fines
+    public boolean canBorrow(User user) {
+
         if (user.getFineBalance() > 0) {
-            System.out.println("❌ You cannot borrow because you have unpaid fines.");
             return false;
         }
 
-        // Overdue loans
         OverdueReport report = overdueReportService.generateReport(user);
-        if (!report.getOverdueLoans().isEmpty()) {
-            System.out.println("❌ You cannot borrow because you have overdue items.");
-            return false;
-        }
+        return report.getOverdueLoans().isEmpty();
+    }
 
+    // ----------------------------------------------------
+    // 🔥 Polymorphic Borrow Function
+    // ----------------------------------------------------
+    private boolean borrow(User user, Media item) {
+
+        if (!canBorrow(user)) return false;
+        if (item == null || item.isBorrowed()) return false;
+
+        Loan loan = new Loan(user, item);
+        LoanRepository.addLoan(loan);
+
+        item.setBorrowed(true);
         return true;
     }
 
-    // -----------------------------------------
+    // ----------------------------------------------------
     // Borrow Book
-    // -----------------------------------------
+    // ----------------------------------------------------
     public boolean borrowBook(User user, String title) {
 
-        if (!canBorrow(user)) return false;
+        List<Book> list = BookRepository.findByTitle(title);
+        Book book = list.stream().filter(b -> !b.isBorrowed()).findFirst().orElse(null);
 
-        List<Book> candidates = BookRepository.findByTitle(title);
-
-        Book selected = null;
-        for (Book b : candidates) {
-            if (!b.isBorrowed()) {
-                selected = b;
-                break;
-            }
+        if (borrow(user, book)) {
+            System.out.println("✔ Book borrowed");
+            return true;
         }
 
-        if (selected == null) return false;
-
-        Loan loan = new Loan(user, selected);
-        LoanRepository.addLoan(loan);
-        selected.setBorrowed(true);
-
-        return true;
+        System.out.println("❌ Book borrow failed");
+        return false;
     }
 
-    // -----------------------------------------
+    // ----------------------------------------------------
     // Borrow CD
-    // -----------------------------------------
+    // ----------------------------------------------------
     public boolean borrowCD(User user, String title) {
 
-        if (!canBorrow(user)) return false;
+        List<CD> list = CDRepository.findByTitle(title);
+        CD cd = list.stream().filter(c -> !c.isBorrowed()).findFirst().orElse(null);
 
-        List<CD> candidates = CDRepository.findByTitle(title);
-
-        CD selected = null;
-        for (CD cd : candidates) {
-            if (!cd.isBorrowed()) {
-                selected = cd;
-                break;
-            }
+        if (borrow(user, cd)) {
+            System.out.println("✔ CD borrowed");
+            return true;
         }
 
-        if (selected == null) return false;
-
-        Loan loan = new Loan(user, selected);
-        LoanRepository.addLoan(loan);
-        selected.setBorrowed(true);
-
-        return true;
+        System.out.println("❌ CD borrow failed");
+        return false;
     }
+
 }
