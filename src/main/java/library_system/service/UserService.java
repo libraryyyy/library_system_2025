@@ -9,14 +9,31 @@ public class UserService {
     private User loggedUser = null;
 
     /**
-     * Registers a new user if the username is not already taken.
+     * Registers a new user IF the username is not taken.
+     *
+     * After adding the new user → saves to JSON file.
+     *
+     * @return true if user added, false otherwise.
      */
-    public boolean register(String username, String password,String email) {
+    public boolean register(String username, String password, String email) {
+
+        // 1. Username must be unique
         if (UserRepository.findUser(username) != null) {
             return false;
         }
 
-        UserRepository.addUser(new User(username, password, email));
+        // 2. Email should not be empty
+        if (email == null || email.trim().isEmpty()) {
+            return false;
+        }
+
+        // 3. Create and store user
+        User newUser = new User(username, password, email);
+        UserRepository.addUser(newUser);
+
+        // 4. Save to file
+        UserRepository.saveToFile();
+
         return true;
     }
 
@@ -26,6 +43,8 @@ public class UserService {
      * 1. User has NO active loans
      * 2. User has NO overdue loans
      * 3. User has NO unpaid fines
+     *  * After removing → saves to JSON file
+     *  * @return message describing success/failure reason.
      */
     public String unregisterUser(User user) {
 
@@ -49,12 +68,15 @@ public class UserService {
 
         // 4. Delete user
         UserRepository.deleteUser(user);
-
+        // 5. Save the updated user list in JSON file
+        UserRepository.saveToFile();
         return "User successfully unregistered.";
     }
 
     /**
-     * Login method
+     * Attempts to log in a user.
+     *
+     * @return true if login successful, false otherwise.
      */
     public boolean login(String username, String password) {
         User user = UserRepository.findUser(username);
@@ -64,7 +86,7 @@ public class UserService {
         }
         return false;
     }
-
+    /** @return the currently logged-in user */
     public User getLoggedUser() {
         return loggedUser;
     }

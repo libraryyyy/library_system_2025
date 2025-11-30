@@ -8,8 +8,12 @@ import java.util.List;
 
 public class OverdueReportService {
 
-    private FineCalculatorService fineCalculator = new FineCalculatorService();
+    private final FineCalculatorService fineCalculator = new FineCalculatorService();
+    /**
 
+     * @param user the user whose overdue report should be generated
+     * @return OverdueReport object containing fines + counts + list of overdue loans
+     */
     public OverdueReport generateReport(User user) {
 
         List<Loan> userLoans = LoanRepository.getUserLoans(user.getUsername());
@@ -20,18 +24,19 @@ public class OverdueReportService {
         int cdsCount = 0;
 
         for (Loan loan : userLoans) {
-            if (loan.isOverdue() && !loan.isReturned()) {
 
-                overdueItems.add(loan);
+            if (!loan.isOverdue() || loan.isReturned())
+                continue;  // skip non-overdue or returned loans
 
-                int fine = fineCalculator.calculateFine(loan);
-                totalFine += fine;
+            overdueItems.add(loan);
 
-                Media item = loan.getItem();
+            int fine = fineCalculator.calculateFine(loan);
+            totalFine += fine;
 
-                if (item instanceof Book) booksCount++;
-                if (item instanceof CD) cdsCount++;
-            }
+            Media item = loan.getItem();
+
+            if (item instanceof Book) booksCount++;
+            if (item instanceof CD) cdsCount++;
         }
 
         return new OverdueReport(overdueItems, totalFine, booksCount, cdsCount);

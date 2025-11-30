@@ -11,6 +11,15 @@ public class Loan {
     private LocalDate dueDate;
     private boolean returned;
 
+
+    public Loan() {
+    }
+    /**
+     * Creates a new loan starting today.
+     *
+     * @param user borrowing user.
+     * @param item media item (Book or CD).
+     */
     public Loan(User user, Media item) {
         this.user = user;
         this.item = item;
@@ -44,8 +53,14 @@ public class Loan {
         return user;
     }
 
+    public void setUser(User user) {
+        this.user = user;
+    }
     public Media getItem() {
         return item;
+    }
+    public void setItem(Media item) {
+        this.item = item;
     }
 
     public LocalDate getBorrowedDate() {
@@ -55,16 +70,24 @@ public class Loan {
     public LocalDate getDueDate() {
         return dueDate;
     }
-
+    /**
+     * @return true if the current date is after the due date.
+     */
     public boolean isOverdue() {
         return LocalDate.now().isAfter(dueDate);
     }
-
+    /**
+     * @return number of overdue days (0 if not overdue).
+     */
     public int getOverdueDays() {
         if (!isOverdue()) return 0;
         return (int) ChronoUnit.DAYS.between(dueDate, LocalDate.now());
     }
-
+    /**
+     * Calculates fine for this loan based on media type and overdue days.
+     *
+     * @return fine in NIS.
+     */
     public int calculateFine() {
         return item.getFineStrategy().calculateFine(getOverdueDays());
     }

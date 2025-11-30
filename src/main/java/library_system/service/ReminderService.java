@@ -9,7 +9,11 @@ import java.util.*;
 public class ReminderService {
 
     private final List<Observer> observers = new ArrayList<>();
-
+    /**
+     * Adds a new observer (EmailNotifier, SMSNotifier, etc...)
+     *
+     * @param observer the observer to add
+     */
     public void addObserver(Observer observer) {
         observers.add(observer);
     }
@@ -20,27 +24,28 @@ public class ReminderService {
     public void sendOverdueReminders() {
         List<Loan> allLoans = LoanRepository.getAllLoans();
 
-        Map<User, Integer> overdueBooksMap = new HashMap<>();
-        Map<User, Integer> overdueCDsMap = new HashMap<>();
+        Map<User, Integer> overdueBooks = new HashMap<>();
+        Map<User, Integer> overdueCDs = new HashMap<>();
 
         for (Loan loan : allLoans) {
-            if (!loan.isOverdue()) continue;
+            if (!loan.isOverdue()|| loan.isReturned()) continue;
 
             User user = loan.getUser();
+
             if (loan.getItem() instanceof Book) {
-                overdueBooksMap.put(user, overdueBooksMap.getOrDefault(user, 0) + 1);
+                overdueBooks.put(user, overdueBooks.getOrDefault(user, 0) + 1);
             } else if (loan.getItem() instanceof CD) {
-                overdueCDsMap.put(user, overdueCDsMap.getOrDefault(user, 0) + 1);
+                overdueCDs.put(user, overdueCDs.getOrDefault(user, 0) + 1);
             }
         }
 
-        Set<User> users = new HashSet<>();
-        users.addAll(overdueBooksMap.keySet());
-        users.addAll(overdueCDsMap.keySet());
+        Set<User> affectedUsers = new HashSet<>();
+        affectedUsers.addAll(overdueBooks.keySet());
+        affectedUsers.addAll(overdueCDs.keySet());
 
-        for (User user : users) {
-            int books = overdueBooksMap.getOrDefault(user, 0);
-            int cds = overdueCDsMap.getOrDefault(user, 0);
+        for (User user : affectedUsers) {
+            int books = overdueBooks.getOrDefault(user, 0);
+            int cds = overdueCDs.getOrDefault(user, 0);
 
             String msg;
             if (cds > 0) {
