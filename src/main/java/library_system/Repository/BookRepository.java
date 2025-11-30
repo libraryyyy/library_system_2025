@@ -27,7 +27,10 @@ public class BookRepository {
     public static List<Book> getAll() {
         return new ArrayList<>(books);
     }
-
+    public static void addBook(Book book) {
+        books.add(book);
+        saveToFile();
+    }
     /**
      * Finds books by title (case-insensitive).
      */

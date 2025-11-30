@@ -5,62 +5,67 @@ import library_system.Repository.LoanRepository;
 import library_system.Repository.UserRepository;
 import library_system.domain.User;
 
-/**
- * Service that handles admin authentication and session state.
- */
 public class AdminService {
 
-    /** Currently logged-in admin, or null if no admin is logged in. */
     private Admin loggedInAdmin = null;
 
     /**
-     * Attempts to log in an admin with the given credentials.
+     * Attempts to log in an admin using credentials.
      *
-     * @param admin    admin instance to validate against.
-     * @param username entered username.
-     * @param password entered password.
-     * @return true if credentials are valid; false otherwise.
+     * @param admin hardcoded admin object from AdminRepository
+     * @param username input username
+     * @param password input password
+     * @return true if credentials match, false otherwise
      */
     public boolean login(Admin admin, String username, String password) {
-        if (admin.getUsername().equals(username) && admin.getPassword().equals(password)) {
+        if (admin.getUsername().equals(username)
+                && admin.getPassword().equals(password)) {
+
             loggedInAdmin = admin;
             return true;
         }
         return false;
     }
 
-    /**
-     * Logs out the current admin.
-     */
+    /** Logs out the current admin. */
     public void logout() {
         loggedInAdmin = null;
     }
 
-    /**
-     * Checks whether an admin is currently logged in.
-     *
-     * @return true if an admin is logged in; false otherwise.
-     */
+    /** @return true if an admin is currently logged in */
     public boolean isLoggedIn() {
         return loggedInAdmin != null;
     }
 
+    /**
+     * Attempts to unregister a user from the system.
+     *
+     * Conditions:
+     * 1. User must exist
+     * 2. User must have no unpaid fines
+     * 3. User must have no active or overdue loans
+     *
+     * @param username username to remove
+     * @return detailed status message (used directly by the CLI).
+     */
     public String unregisterUser(String username) {
 
         User u = UserRepository.findUser(username);
 
         if (u == null)
-            return "❌ User does not exist.";
+            return "User does not exist.";
 
         if (u.getFineBalance() > 0)
-            return "❌ Cannot unregister user: Unpaid fines exist.";
+            return "Cannot unregister user: Unpaid fines exist.";
 
         if (!LoanRepository.getUserLoans(username).isEmpty())
-            return "❌ Cannot unregister user: Active loans exist.";
+            return "Cannot unregister user: Active loans exist.";
 
         boolean removed = UserRepository.removeUser(username);
-        if (removed) return "✔ User unregistered successfully.";
+        if (removed)
+            return "User unregistered successfully.";
 
-        return "❌ Could not remove user (unknown error).";
+        return "Could not remove user (unknown error).";
     }
+
 }

@@ -1,11 +1,16 @@
 package library_system.domain;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 
 public class Loan {
-
     private User user;
+    @JsonTypeInfo(
+            use = JsonTypeInfo.Id.CLASS,
+            include = JsonTypeInfo.As.PROPERTY,
+            property = "@class"
+    )
     private Media item;
     private LocalDate borrowedDate;
     private LocalDate dueDate;

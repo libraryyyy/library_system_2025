@@ -6,23 +6,19 @@ import library_system.domain.CD;
 
 import java.util.List;
 
-/**
- * Service that encapsulates business logic related to CDs.
- */
 public class CDService {
 
     /**
-     * Adds a new CD to the system.
-     *
      * @param cd CD to add.
      */
     public void addCD(CD cd) {
+
+        if (cd == null) return;
         CDRepository.addCD(cd);
     }
 
     /**
-     * Searches for CDs by title.
-     *
+
      * @param title title to search for.
      * @return list of matching CDs.
      */

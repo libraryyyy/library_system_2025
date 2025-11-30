@@ -17,11 +17,12 @@ public class EmailNotifier implements Observer {
 
     @Override
     public void notify(User user, String message) {
-        System.out.println("[EMAIL SENT TO] " + user.getUsername() + " (" + user.getEmail() + "): " + message);
+        System.out.println("[EMAIL] → Sending to " + user.getEmail());
 
         Properties props = new Properties();
         props.put("mail.smtp.auth", "true");
         props.put("mail.smtp.starttls.enable", "true");
+        props.put("mail.smtp.ssl.trust", "smtp.gmail.com");
         props.put("mail.smtp.host", "smtp.gmail.com");
         props.put("mail.smtp.port", "587");
 
@@ -37,11 +38,18 @@ public class EmailNotifier implements Observer {
             msg.setFrom(new InternetAddress(username));
             msg.setRecipients(Message.RecipientType.TO, InternetAddress.parse(user.getEmail()));
             msg.setSubject("Library Overdue Reminder");
-            msg.setText(message);
-
+            msg.setContent(
+                    "<h3>Library Reminder</h3>"
+                            + "<p>" + message + "</p>",
+                    "text/html; charset=utf-8"
+            );
             Transport.send(msg);
-        } catch (MessagingException e) {
-            e.printStackTrace();
+            System.out.println("✔ EMAIL SENT to " + user.getEmail());
+
+        }
+        catch (MessagingException e) {
+            System.err.println("EMAIL FAILED to " + user.getEmail());
+            System.err.println("Reason: " + e.getMessage());
         }
     }
 }

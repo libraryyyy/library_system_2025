@@ -36,7 +36,9 @@ public class UserRepository {
             Type listType = new TypeToken<List<User>>() {}.getType();
             users = gson.fromJson(reader, listType);
 
-            if (users == null) users = new ArrayList<>();
+            if (users == null) {
+                users = new ArrayList<>();
+            }
 
         } catch (IOException e) {
             users = new ArrayList<>();
@@ -74,7 +76,7 @@ public class UserRepository {
      */
     public static User findUser(String username) {
         for (User u : users) {
-            if (u.getUsername().equals(username)) {
+            if (u.getUsername().equalsIgnoreCase(username)) {
                 return u;
             }
         }
@@ -92,6 +94,7 @@ public class UserRepository {
         User u = findUser(username);
         if (u != null) {
             users.remove(u);
+            saveToFile();
             return true;
         }
         return false;
