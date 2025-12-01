@@ -1,62 +1,96 @@
 package library_system.service;
 
 import library_system.Repository.LoanRepository;
-import library_system.domain.*;
+import library_system.Repository.UserRepository;
+import library_system.domain.Book;
+import library_system.domain.CD;
+import library_system.domain.Loan;
+import library_system.domain.User;
 import library_system.notification.Observer;
 
 import java.util.*;
 
+/**
+ * Service responsible for sending overdue reminders to users via registered observers.
+ *<p>
+ * The {@link #sendOverdueReminders()} method returns a status code:
+ * 0 = no users, 1 = users exist but no overdue, 2 = reminders sent.
+ *</p>
+ */
 public class ReminderService {
 
+    /** List of observers that will receive notification events. */
     private final List<Observer> observers = new ArrayList<>();
+
     /**
-     * Adds a new observer (EmailNotifier, SMSNotifier, etc...)
+     * Registers a new observer to receive overdue reminder events.
      *
-     * @param observer the observer to add
+     * @param observer notification channel (EmailNotifier, ConsoleNotifier, etc.)
      */
     public void addObserver(Observer observer) {
         observers.add(observer);
     }
 
     /**
-     * Send reminders to users with overdue items (Books + CDs)
+     * Sends overdue reminders to all users who have outstanding overdue items.
+     *
+     * Return codes:
+     * 0 = no users
+     * 1 = users exist but no overdue items
+     * 2 = reminders were sent
+     *
+     * @return status code (0/1/2)
      */
-    public void sendOverdueReminders() {
-        List<Loan> allLoans = LoanRepository.getAllLoans();
+    public int sendOverdueReminders() {
 
-        Map<User, Integer> overdueBooks = new HashMap<>();
-        Map<User, Integer> overdueCDs = new HashMap<>();
+        List<User> allUsers = UserRepository.getAllUsers();
 
-        for (Loan loan : allLoans) {
-            if (!loan.isOverdue()|| loan.isReturned()) continue;
-
-            User user = loan.getUser();
-
-            if (loan.getItem() instanceof Book) {
-                overdueBooks.put(user, overdueBooks.getOrDefault(user, 0) + 1);
-            } else if (loan.getItem() instanceof CD) {
-                overdueCDs.put(user, overdueCDs.getOrDefault(user, 0) + 1);
-            }
+        if (allUsers.isEmpty()) {
+            System.out.println("No users in system.");
+            return 0;
         }
 
-        Set<User> affectedUsers = new HashSet<>();
-        affectedUsers.addAll(overdueBooks.keySet());
-        affectedUsers.addAll(overdueCDs.keySet());
+        List<Loan> overdueLoans = LoanRepository.getOverdueLoans();
+        if (overdueLoans.isEmpty()) {
+            System.out.println("No overdue items found.");
+            return 1;
+        }
 
-        for (User user : affectedUsers) {
-            int books = overdueBooks.getOrDefault(user, 0);
-            int cds = overdueCDs.getOrDefault(user, 0);
+        Map<String, List<Loan>> byUser = new HashMap<>();
+        for (Loan loan : overdueLoans) {
+            String username = loan.getUser().getUsername();
+            byUser.computeIfAbsent(username, k -> new ArrayList<>()).add(loan);
+        }
 
-            String msg;
-            if (cds > 0) {
-                msg = "You have " + books + " overdue book(s) and " + cds + " overdue CD(s).";
+        boolean anySent = false;
+        for (Map.Entry<String, List<Loan>> e : byUser.entrySet()) {
+            String username = e.getKey();
+            User user = UserRepository.findUser(username);
+            if (user == null) continue;
+
+            List<Loan> loans = e.getValue();
+            long bookCount = loans.stream().filter(l -> l.getItem() instanceof Book).count();
+            long cdCount = loans.stream().filter(l -> l.getItem() instanceof CD).count();
+
+            String message;
+            if (bookCount > 0 && cdCount > 0) {
+                message = "You have " + bookCount + " overdue book(s) and " + cdCount + " overdue CD(s).";
+            } else if (bookCount > 0) {
+                message = "You have " + bookCount + " overdue book(s).";
             } else {
-                msg = "You have " + books + " overdue book(s).";
+                message = "You have " + cdCount + " overdue CD(s).";
             }
 
             for (Observer observer : observers) {
-                observer.notify(user, msg);
+                try {
+                    observer.notify(user, message);
+                    anySent = true;
+                } catch (Exception ex) {
+                    System.err.println("Failed to notify user " + username + ": " + ex.getMessage());
+                }
             }
         }
+
+        return anySent ? 2 : 1;
     }
-}
+ }

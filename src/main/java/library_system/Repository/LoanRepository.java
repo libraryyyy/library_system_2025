@@ -1,8 +1,10 @@
 package library_system.Repository;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import library_system.domain.Loan;
 import library_system.domain.User;
 
@@ -11,24 +13,87 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Repository for storing all loan records (Book/CD borrowing).
- * Uses JSON file persistence to keep loans across program runs.
+ * Repository for storing and managing loan records.
  */
 public class LoanRepository {
 
-    /** In-memory loan list */
     private static final List<Loan> loans = new ArrayList<>();
+    // persisted file name (in data/ directory)
+    private static final ObjectMapper mapper = MapperProvider.MAPPER;
+    private static final String FILE_NAME = "loans.json";
+    private static final File FILE = FileUtil.getDataFile(FILE_NAME);
 
-    private static final String FILE_PATH = "src/main/resources/loans.json";
-    private static final ObjectMapper mapper = new ObjectMapper().registerModule(new JavaTimeModule());;
+    /**
+     * Loads all loans from JSON file.
+     */
+    public static void loadFromFile() {
+        try {
+            if (!FILE.exists() || FILE.length() == 0) {
+                saveToFile();
+                return;
+            }
 
-    // Load loans on startup
-    static {
-        loadFromFile();
+            JsonNode root = mapper.readTree(FILE);
+            ArrayNode array;
+            if (root == null || root.isNull()) {
+                array = mapper.createArrayNode();
+            } else if (root.isArray()) {
+                array = (ArrayNode) root;
+            } else {
+                array = mapper.createArrayNode();
+                array.add(root);
+            }
+
+            boolean fixed = false;
+            for (int i = 0; i < array.size(); i++) {
+                JsonNode loanNode = array.get(i);
+                if (loanNode != null && loanNode.isObject()) {
+                    ObjectNode loanObj = (ObjectNode) loanNode;
+                    JsonNode itemNode = loanObj.get("item");
+                    if (itemNode != null && itemNode.isObject()) {
+                        ObjectNode itemObj = (ObjectNode) itemNode;
+                        if (!itemObj.has("mediaType") || itemObj.get("mediaType").isNull() || itemObj.get("mediaType").asText().isEmpty()) {
+                            if (itemObj.has("isbn") || itemObj.has("author")) {
+                                itemObj.put("mediaType", "BOOK");
+                                fixed = true;
+                            } else if (itemObj.has("artist")) {
+                                itemObj.put("mediaType", "CD");
+                                fixed = true;
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (fixed) {
+                mapper.writerWithDefaultPrettyPrinter().writeValue(FILE, array);
+            }
+
+            List<Loan> loaded = mapper.convertValue(array, new TypeReference<>() {});
+            loans.clear();
+            loans.addAll(loaded);
+
+        } catch (Exception e) {
+            System.err.println("Error loading loans.json: " + e.getMessage());
+        }
     }
 
     /**
-     * Adds a new loan to repository and saves to file.
+     * Saves all loans to JSON file.
+     */
+    public static void saveToFile() {
+        try {
+            FileUtil.writeAtomic(FILE, loans, mapper);
+
+        } catch (Exception e) {
+            System.err.println("Error saving loans.json");
+        }
+    }
+
+    /**
+     * Adds a new loan and persists change.
+     *
+     * @param loan the loan to add
      */
     public static void addLoan(Loan loan) {
         loans.add(loan);
@@ -36,12 +101,24 @@ public class LoanRepository {
     }
 
     /**
-     * Returns a list of all loans for a specific username.
+     * Counts the user's active (not returned) loans.
+     */
+    public static int countActiveLoans(User user) {
+        return (int) loans.stream()
+                .filter(l -> l.getUser().getUsername().equalsIgnoreCase(user.getUsername()) && !l.isReturned())
+                .count();
+    }
+
+    /**
+     * Returns all loans belonging to a user.
+     *
+     * @param username username to search for
+     * @return user's loans
      */
     public static List<Loan> getUserLoans(String username) {
         List<Loan> result = new ArrayList<>();
         for (Loan l : loans) {
-            if (l.getUser().getUsername().equals(username)) {
+            if (l.getUser().getUsername().equalsIgnoreCase(username)) {
                 result.add(l);
             }
         }
@@ -49,14 +126,18 @@ public class LoanRepository {
     }
 
     /**
-     * Returns all loans in system.
+     * Returns all loans.
+     *
+     * @return list of all loans
      */
     public static List<Loan> getAllLoans() {
         return new ArrayList<>(loans);
     }
 
     /**
-     * Returns all overdue (but not returned) loans.
+     * Returns all overdue (and not returned) loans.
+     *
+     * @return list of overdue loans
      */
     public static List<Loan> getOverdueLoans() {
         List<Loan> result = new ArrayList<>();
@@ -69,60 +150,95 @@ public class LoanRepository {
     }
 
     /**
-     * Checks whether a user has overdue loans.
+     * Determines if the user has any overdue loans.
+     *
+     * @param user the user
+     * @return true if overdue exists
      */
     public static boolean hasOverdueLoans(User user) {
         return loans.stream()
-                .anyMatch(l -> l.getUser().equals(user) && l.isOverdue());
+                .anyMatch(l -> l.getUser().getUsername()
+                        .equalsIgnoreCase(user.getUsername())
+                        && l.isOverdue());
     }
 
     /**
-     * Checks whether a user has active (non-returned) loans.
+     * Determines if the user has any active (not returned) loans.
+     *
+     * @param user the user
+     * @return true if user has active loans
      */
     public static boolean hasActiveLoans(User user) {
         return loans.stream()
-                .anyMatch(l -> l.getUser().equals(user) && !l.isReturned());
+                .anyMatch(l -> l.getUser().getUsername()
+                        .equalsIgnoreCase(user.getUsername())
+                        && !l.isReturned());
     }
 
     /**
-     * Saves loan list to JSON file.
-     */
-    private static void saveToFile() {
-        try {
-            mapper.writerWithDefaultPrettyPrinter()
-                    .writeValue(new File(FILE_PATH), loans);
-        } catch (Exception e) {
-            System.err.println("ERROR saving loans.json → " + e.getMessage());
-        }
-    }
-
-    /**
-     * Loads loan list from JSON file during startup.
-     */
-    private static void loadFromFile() {
-        try {
-            File file = new File(FILE_PATH);
-
-            if (!file.exists()) {
-                mapper.writeValue(file, loans); // create empty file
-                return;
-            }
-
-            List<Loan> loaded =
-                    mapper.readValue(file, new TypeReference<List<Loan>>() {});
-            loans.clear();
-            loans.addAll(loaded);
-
-        } catch (Exception e) {
-            System.err.println("ERROR loading loans.json → " + e.getMessage());
-        }
-    }
-
-    /**
-     * Clears all loans (used only in unit testing)
+     * Clears all loans (for testing).
      */
     public static void clear() {
         loans.clear();
         saveToFile();
+    }
+
+    /**
+     * Finds the active (not returned) loan for the specified user and media item.
+     * Matching is done by comparing ISBN for books or title+artist for CDs.
+     *
+     * @param user the user who borrowed
+     * @param item the media item
+     * @return the matching Loan or null if not found
+     */
+    public static Loan findActiveLoan(User user, library_system.domain.Media item) {
+        if (user == null || item == null) return null;
+        for (Loan l : loans) {
+            if (l.isReturned()) continue;
+            if (!l.getUser().getUsername().equalsIgnoreCase(user.getUsername())) continue;
+            library_system.domain.Media li = l.getItem();
+            if (li == null) continue;
+            if (li instanceof library_system.domain.Book && item instanceof library_system.domain.Book) {
+                String a = ((library_system.domain.Book) li).getIsbn();
+                String b = ((library_system.domain.Book) item).getIsbn();
+                if (a != null && b != null && a.equalsIgnoreCase(b)) return l;
+            } else if (li instanceof library_system.domain.CD && item instanceof library_system.domain.CD) {
+                String t1 = li.getTitle();
+                String t2 = item.getTitle();
+                String ar1 = ((library_system.domain.CD) li).getArtist();
+                String ar2 = ((library_system.domain.CD) item).getArtist();
+                if (t1 != null && t2 != null && ar1 != null && ar2 != null
+                        && t1.equalsIgnoreCase(t2) && ar1.equalsIgnoreCase(ar2)) {
+                    return l;
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Marks the specified loan as returned and persists change.
+     *
+     * @param loan loan to mark returned
+     */
+    public static void markLoanReturned(Loan loan) {
+        if (loan == null) return;
+        for (Loan l : loans) {
+            if (l == loan) {
+                l.setReturned(true);
+                saveToFile();
+                return;
+            }
+        }
+        // If not the same instance, try to find matching loan and mark
+        for (Loan l : loans) {
+            if (!l.isReturned() && l.getUser().getUsername().equalsIgnoreCase(loan.getUser().getUsername())
+                    && l.getItem() != null && loan.getItem() != null
+                    && l.getItem().getTitle().equalsIgnoreCase(loan.getItem().getTitle())) {
+                l.setReturned(true);
+                saveToFile();
+                return;
+            }
+        }
     }
 }

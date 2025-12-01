@@ -5,67 +5,78 @@ import library_system.Repository.LoanRepository;
 import library_system.Repository.UserRepository;
 import library_system.domain.User;
 
+/**
+ * Service layer handling administrator authentication and user management.
+ * Supports login, logout, and unregistering users under specific constraints.
+ */
 public class AdminService {
 
+    /** Currently logged-in admin instance. */
     private Admin loggedInAdmin = null;
 
     /**
-     * Attempts to log in an admin using credentials.
+     * Attempts to authenticate the admin with provided credentials.
      *
-     * @param admin hardcoded admin object from AdminRepository
-     * @param username input username
-     * @param password input password
-     * @return true if credentials match, false otherwise
+     * @param admin     admin object from the repository
+     * @param username  input username
+     * @param password  input password
+     * @return true if authentication succeeds, false otherwise
      */
     public boolean login(Admin admin, String username, String password) {
-        if (admin.getUsername().equals(username)
+        if (admin.getUsername().equalsIgnoreCase(username)
                 && admin.getPassword().equals(password)) {
-
             loggedInAdmin = admin;
             return true;
         }
         return false;
     }
 
-    /** Logs out the current admin. */
+    /** Logs out the currently logged-in admin. */
     public void logout() {
         loggedInAdmin = null;
     }
 
-    /** @return true if an admin is currently logged in */
+    /**
+     * @return true if an admin is currently logged in
+     */
     public boolean isLoggedIn() {
         return loggedInAdmin != null;
     }
 
     /**
-     * Attempts to unregister a user from the system.
+     * Attempts to unregister a user.
      *
      * Conditions:
-     * 1. User must exist
-     * 2. User must have no unpaid fines
-     * 3. User must have no active or overdue loans
+     * <ul>
+     *     <li>User must exist</li>
+     *     <li>User must have no unpaid fines</li>
+     *     <li>User must have no active or overdue loans</li>
+     * </ul>
      *
-     * @param username username to remove
-     * @return detailed status message (used directly by the CLI).
+     * @param username username to unregister
+     * @return status message for CLI
      */
     public String unregisterUser(String username) {
 
-        User u = UserRepository.findUser(username);
+        User user = UserRepository.findUser(username);
 
-        if (u == null)
+        if (user == null)
             return "User does not exist.";
 
-        if (u.getFineBalance() > 0)
+        if (user.getFineBalance() > 0)
             return "Cannot unregister user: Unpaid fines exist.";
 
-        if (!LoanRepository.getUserLoans(username).isEmpty())
+        boolean hasActiveLoans = LoanRepository.getUserLoans(username)
+                .stream()
+                .anyMatch(l -> !l.isReturned());
+
+        if (hasActiveLoans)
             return "Cannot unregister user: Active loans exist.";
 
         boolean removed = UserRepository.removeUser(username);
-        if (removed)
-            return "User unregistered successfully.";
 
-        return "Could not remove user (unknown error).";
+        return removed
+                ? "User unregistered successfully."
+                : "Could not remove user (unknown error).";
     }
-
 }

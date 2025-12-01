@@ -2,6 +2,7 @@ package library_system.Service;
 
 import library_system.Repository.LoanRepository;
 import library_system.Repository.UserRepository;
+import library_system.domain.CD;
 import library_system.domain.Book;
 import library_system.domain.Loan;
 import library_system.domain.User;
@@ -13,6 +14,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 public class ReminderServiceTest {
 
@@ -54,8 +57,13 @@ public class ReminderServiceTest {
         Loan loan = new Loan(u, b);
         loan.setBorrowedDate(LocalDate.now().minusDays(30));
         loan.setDueDate(LocalDate.now().minusDays(15));
+        List<Loan> list = new ArrayList<>();
+        list.add(loan);
+        // directly inject into repository for test
+        LoanRepository.clear();
         LoanRepository.addLoan(loan);
 
+        // add a no-op observer that records notifications
         final boolean[] called = {false};
         reminderService.addObserver(new Observer() {
             @Override
@@ -69,3 +77,4 @@ public class ReminderServiceTest {
         Assertions.assertTrue(called[0]);
     }
 }
+

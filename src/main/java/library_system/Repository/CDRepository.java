@@ -1,115 +1,140 @@
 package library_system.Repository;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import library_system.domain.CD;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
-
+/**
+ * Repository for storing and retrieving CDs.
+ */
 public class CDRepository {
 
-    /** In-memory list of CDs */
     private static final List<CD> cds = new ArrayList<>();
+    private static final ObjectMapper mapper = MapperProvider.MAPPER;
+    private static final String FILE_NAME = "cds.json";
+    private static final File FILE = FileUtil.getDataFile(FILE_NAME);
 
-    private static final String FILE_PATH = "src/main/resources/cds.json";
-    private static final ObjectMapper mapper = new ObjectMapper().registerModule(new JavaTimeModule());;
+    /**
+     * Loads CDs from JSON — repairs missing mediaType values.
+     */
+    public static void loadFromFile() {
+        try {
+            if (!FILE.exists() || FILE.length() == 0) {
+                mapper.writerWithDefaultPrettyPrinter()
+                        .writeValue(FILE, new ArrayList<>());
+                cds.clear();
+                return;
+            }
 
-    // Load CDs from file at startup
-    static {
-        loadFromFile();
+            // read raw JSON
+            JsonNode root = mapper.readTree(FILE);
+
+            if (root == null || !root.isArray()) {
+                cds.clear();
+                mapper.writerWithDefaultPrettyPrinter()
+                        .writeValue(FILE, new ArrayList<>());
+                return;
+            }
+
+            ArrayNode array = (ArrayNode) root;
+            boolean fixed = false;
+
+            for (JsonNode node : array) {
+                if (node instanceof ObjectNode obj) {
+                    if (!obj.has("mediaType")) {
+                        obj.put("mediaType", "CD");
+                        fixed = true;
+                    }
+                }
+            }
+
+            if (fixed) {
+                mapper.writerWithDefaultPrettyPrinter()
+                        .writeValue(FILE, array);
+            }
+
+            // deserialize PROPERLY (important)
+            List<CD> loaded = mapper.readValue(FILE, new TypeReference<List<CD>>() {});
+            cds.clear();
+            cds.addAll(loaded);
+
+        } catch (Exception e) {
+            System.err.println("Error loading cds.json: " + e.getMessage());
+            cds.clear();
+        }
     }
 
     /**
-     * Adds a new CD and saves to file.
+     * Writes CDs to JSON.
      */
+    public static void saveToFile() {
+        try {
+            ArrayNode array = mapper.createArrayNode();
+            for (CD cd : cds) {
+                ObjectNode obj = mapper.valueToTree(cd);
+                obj.put("mediaType", "CD");
+                array.add(obj);
+            }
+            mapper.writerWithDefaultPrettyPrinter().writeValue(FILE, array);
+        } catch (Exception e) {
+            System.err.println("Error saving cds.json: " + e.getMessage());
+        }
+    }
+
+    /** Add CD */
     public static void addCD(CD cd) {
         cds.add(cd);
         saveToFile();
     }
 
-    /**
-     * Returns a CD that matches the title (case-insensitive).
-     */
-    public static CD findOneByTitle(String title) {
-        for (CD cd : cds) {
-            if (cd.getTitle().equalsIgnoreCase(title)) {
-                return cd;
-            }
-        }
-        return null;
-    }
-
-    /**
-     * Returns a list of CDs matching title (case-insensitive).
-     */
-    public static List<CD> findByTitle(String title) {
+    /** Search by title or artist */
+    public static List<CD> search(String keyword) {
+        if (keyword == null) return new ArrayList<>();
+        keyword = keyword.toLowerCase();
         List<CD> result = new ArrayList<>();
         for (CD cd : cds) {
-            if (cd.getTitle().equalsIgnoreCase(title)) {
+            if (cd.getTitle().toLowerCase().contains(keyword)
+                    || cd.getArtist().toLowerCase().contains(keyword)) {
                 result.add(cd);
             }
         }
         return result;
     }
 
-    /**
-     * Returns all CDs in the system.
-     */
+    /** Partial title search */
+    public static List<CD> findByTitle(String title) {
+        if (title == null) return new ArrayList<>();
+        title = title.toLowerCase();
+        List<CD> result = new ArrayList<>();
+        for (CD cd : cds) {
+            if (cd.getTitle().toLowerCase().contains(title)) {
+                result.add(cd);
+            }
+        }
+        return result;
+    }
+
+    /** Return ALL CDs — SAME instances */
     public static List<CD> getAll() {
         return new ArrayList<>(cds);
     }
 
-    /**
-     * Removes a CD and saves the updated list to file.
-     */
+    /** Remove CD */
     public static void removeCD(CD cd) {
         cds.remove(cd);
         saveToFile();
     }
 
-    /**
-     * Clears the CD list (used in unit tests).
-     */
+    /** Clear repository */
     public static void clear() {
         cds.clear();
         saveToFile();
-    }
-
-    /**
-     * Saves the CD list to cds.json.
-     */
-    private static void saveToFile() {
-        try {
-            mapper.writerWithDefaultPrettyPrinter()
-                    .writeValue(new File(FILE_PATH), cds);
-        } catch (Exception e) {
-            System.err.println("ERROR saving cds.json → " + e.getMessage());
-        }
-    }
-
-    /**
-     * Loads CDs from cds.json file on startup.
-     */
-    private static void loadFromFile() {
-        try {
-            File file = new File(FILE_PATH);
-
-            if (!file.exists()) {
-                mapper.writeValue(file, cds); // Create empty JSON file
-                return;
-            }
-
-            List<CD> loaded =
-                    mapper.readValue(file, new TypeReference<List<CD>>() {});
-            cds.clear();
-            cds.addAll(loaded);
-
-        } catch (Exception e) {
-            System.err.println("ERROR loading cds.json → " + e.getMessage());
-        }
     }
 }

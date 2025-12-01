@@ -6,10 +6,15 @@ import library_system.domain.CD;
 
 import java.util.List;
 
+/**
+ * Service layer for CD operations.
+ */
 public class CDService {
 
     /**
-     * @param cd CD to add.
+     * Adds a CD to the repository.
+     *
+     * @param cd CD to add; ignored if null
      */
     public void addCD(CD cd) {
 
@@ -18,18 +23,19 @@ public class CDService {
     }
 
     /**
-
-     * @param title title to search for.
-     * @return list of matching CDs.
+     * Searches for CDs by keyword in title or artist.
+     *
+     * @param keyword search keyword (partial, case-insensitive)
+     * @return list of matching CDs (may be empty)
      */
-    public List<CD> searchByTitle(String title) {
-        return CDRepository.findByTitle(title);
+    public List<CD> search(String keyword) {
+        return CDRepository.search(keyword);
     }
 
     /**
      * Returns all CDs in the system.
      *
-     * @return list of all CDs.
+     * @return list containing all CDs
      */
     public List<CD> getAllCDs() {
         return CDRepository.getAll();

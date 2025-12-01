@@ -6,13 +6,17 @@ import library_system.domain.*;
 import java.util.ArrayList;
 import java.util.List;
 
+
 public class OverdueReportService {
 
+    /** Fine calculator used to compute fines for individual loans. */
     private final FineCalculatorService fineCalculator = new FineCalculatorService();
-    /**
 
-     * @param user the user whose overdue report should be generated
-     * @return OverdueReport object containing fines + counts + list of overdue loans
+    /**
+     * Builds an overdue report for the given user.
+     *
+     * @param user the user for whom the report is generated
+     * @return an {@link OverdueReport} containing:
      */
     public OverdueReport generateReport(User user) {
 
@@ -25,8 +29,8 @@ public class OverdueReportService {
 
         for (Loan loan : userLoans) {
 
-            if (!loan.isOverdue() || loan.isReturned())
-                continue;  // skip non-overdue or returned loans
+            if (loan.isReturned() || !loan.isOverdue())
+                continue;
 
             overdueItems.add(loan);
 
@@ -34,7 +38,6 @@ public class OverdueReportService {
             totalFine += fine;
 
             Media item = loan.getItem();
-
             if (item instanceof Book) booksCount++;
             if (item instanceof CD) cdsCount++;
         }

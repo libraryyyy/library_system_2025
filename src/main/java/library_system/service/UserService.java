@@ -4,94 +4,109 @@ import library_system.Repository.UserRepository;
 import library_system.Repository.LoanRepository;
 import library_system.domain.User;
 
+/**
+ * Service handling user registration, authentication, and removal.
+ * Integrates with the repositories for data persistence.
+ */
 public class UserService {
 
+    /** Currently logged-in user. */
     private User loggedUser = null;
 
     /**
-     * Registers a new user IF the username is not taken.
+     * Registers a new user if the username and email are valid and unique.
      *
-     * After adding the new user → saves to JSON file.
-     *
-     * @return true if user added, false otherwise.
+     * @param username desired username
+     * @param password user password
+     * @param email    user email
+     * @return true if successfully registered, false otherwise
      */
     public boolean register(String username, String password, String email) {
 
-        // 1. Username must be unique
-        if (UserRepository.findUser(username) != null) {
+        if (UserRepository.findUser(username) != null)
             return false;
-        }
 
-        // 2. Email should not be empty
-        if (email == null || email.trim().isEmpty()) {
+        if (email == null || email.trim().isEmpty())
             return false;
-        }
 
-        // 3. Create and store user
+        if (!isValidEmail(email))
+            return false;
+
+        if (UserRepository.findUserByEmail(email) != null)
+            return false;
+
         User newUser = new User(username, password, email);
         UserRepository.addUser(newUser);
-
-        // 4. Save to file
-        UserRepository.saveToFile();
 
         return true;
     }
 
+    /**
+     * Validates emails using a simple structural check.
+     *
+     * @param email email string
+     * @return true if valid
+     */
+    private boolean isValidEmail(String email) {
+        String lower = email.toLowerCase();
+        return lower.contains("@") && lower.contains(".");
+    }
 
     /**
-     * Unregisters a user ONLY if:
-     * 1. User has NO active loans
-     * 2. User has NO overdue loans
-     * 3. User has NO unpaid fines
-     *  * After removing → saves to JSON file
-     *  * @return message describing success/failure reason.
+     * Unregisters a user if:
+     * <ul>
+     *     <li>No overdue loans</li>
+     *     <li>No active loans</li>
+     *     <li>No unpaid fines</li>
+     * </ul>
+     *
+     * @param user user to remove
+     * @return status message explaining success or reason for failure
      */
     public String unregisterUser(User user) {
 
-        // 1. Check overdue loans
-        if (LoanRepository.hasOverdueLoans(user)) {
+        if (LoanRepository.hasOverdueLoans(user))
             return "Cannot unregister: User has overdue loans.";
-        }
-        // 2. Check active loans
-        if (LoanRepository.hasActiveLoans(user)) {
+
+        if (LoanRepository.hasActiveLoans(user))
             return "Cannot unregister: User has active loans.";
-        }
 
-
-
-        // 3. Check unpaid fines
-        if (user.getFineBalance() > 0) {
+        if (user.getFineBalance() > 0)
             return "Cannot unregister: User has unpaid fines.";
-        }
 
-
-
-
-        // 4. Delete user
         UserRepository.deleteUser(user);
-        // 5. Save the updated user list in JSON file
         UserRepository.saveToFile();
+
         return "User successfully unregistered.";
     }
 
     /**
-     * Attempts to log in a user.
+     * Attempts to authenticate a user.
      *
-     * @return true if login successful, false otherwise.
+     * @param username input username
+     * @param password input password
+     * @return true if login succeeds, false otherwise
      */
     public boolean login(String username, String password) {
         User user = UserRepository.findUser(username);
-        if (user != null && user.getPassword().equals(password)) {
+
+        if (user != null
+                && user.getUsername().equalsIgnoreCase(username)
+                && user.getPassword().equals(password)) {
             loggedUser = user;
             return true;
         }
         return false;
     }
-    /** @return the currently logged-in user */
+
+    /**
+     * @return the currently logged-in user
+     */
     public User getLoggedUser() {
         return loggedUser;
     }
 
+    /** Logs out the active user. */
     public void logout() {
         loggedUser = null;
     }

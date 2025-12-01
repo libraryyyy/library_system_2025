@@ -1,4 +1,5 @@
 package library_system.CLI;
+
 import library_system.Repository.*;
 import library_system.domain.*;
 import library_system.notification.EmailNotifier;
@@ -8,7 +9,7 @@ import java.util.List;
 import java.util.Scanner;
 
 /**
- * Full CLI for Library System (with Email Notification)
+ * Console-based CLI for the Library Management System.
  */
 public class Main {
 
@@ -16,15 +17,24 @@ public class Main {
     private static final AdminService adminService = new AdminService();
     private static final UserService userService = new UserService();
     private static final BookService bookService = new BookService();
+    private static final CDService cdService = new CDService();
     private static final BorrowService borrowService = new BorrowService();
     private static final OverdueReportService overdueReportService = new OverdueReportService();
     private static final ReminderService reminderService = new ReminderService();
 
+    /**
+     * Application entry point.
+     *
+     * @param args CLI args (not used)
+     */
     public static void main(String[] args) {
 
-        // إضافة EmailNotifier (تأكد من وضع بريدك وكلمة المرور الخاصة)
+        UserRepository.loadFromFile();
+        BookRepository.loadFromFile();
+        CDRepository.loadFromFile();
+        LoanRepository.loadFromFile();
+
         reminderService.addObserver(new EmailNotifier("your_email@gmail.com", "app_password"));
-        reminderService.sendOverdueReminders();
 
         System.out.println("=== Library Management System ===");
 
@@ -42,19 +52,18 @@ public class Main {
                 case "1": handleAdminLogin(); break;
                 case "2": handleUserLogin(); break;
                 case "3": handleUserRegistration(); break;
-                case "4":
-                    System.out.println("Exiting system...");
-                    running = false;
-                    break;
-                default:
-                    System.out.println("Invalid option. Try again.");
+                case "4": running = false; break;
+                default: System.out.println("Invalid option.");
             }
         }
 
+        // Persist repositories on exit
+        UserRepository.saveToFile();
+        BookRepository.saveToFile();
+        CDRepository.saveToFile();
+        LoanRepository.saveToFile();
         scanner.close();
     }
-
-    // =============================== ADMIN LOGIN =============================== //
 
     private static void handleAdminLogin() {
         Admin admin = AdminRepository.getAdmin();
@@ -71,12 +80,10 @@ public class Main {
                 success = true;
                 adminMenu();
             } else {
-                System.out.println("Wrong credentials! Try again.\n");
+                System.out.println("Wrong credentials!");
             }
         }
     }
-
-    // =============================== ADMIN MENU =============================== //
 
     private static void adminMenu() {
         boolean adminRunning = true;
@@ -100,22 +107,16 @@ public class Main {
                 case "3": searchBooks(); break;
                 case "4": searchCDs(); break;
                 case "5":
-                    reminderService.sendOverdueReminders();
-                    System.out.println("Overdue reminders sent!");
+                    int status = reminderService.sendOverdueReminders();
+                    if (status == 2) System.out.println("Reminders sent!");
                     break;
                 case "6":
-                    System.out.print("Enter username to remove: ");
+                    System.out.print("Enter username: ");
                     String userToRemove = scanner.nextLine();
-                    String result = adminService.unregisterUser(userToRemove);
-                    System.out.println(result);
+                    System.out.println(adminService.unregisterUser(userToRemove));
                     break;
-                case "7":
-                    adminService.logout();
-                    adminRunning = false;
-                    System.out.println("Logged out from admin.");
-                    break;
-                default:
-                    System.out.println("Invalid option.");
+                case "7": adminRunning = false; break;
+                default: System.out.println("Invalid option.");
             }
         }
     }
@@ -129,7 +130,7 @@ public class Main {
         String isbn = scanner.nextLine();
 
         BookRepository.addBook(new Book(title, author, isbn));
-        System.out.println("Book added successfully.");
+        System.out.println("Book added.");
     }
 
     private static void addCD() {
@@ -139,153 +140,251 @@ public class Main {
         String artist = scanner.nextLine();
 
         CDRepository.addCD(new CD(title, artist));
-        System.out.println("CD added successfully.");
+        System.out.println("CD added.");
     }
+
+    // -------------------- BOOK SEARCH --------------------
 
     private static void searchBooks() {
-        System.out.print("Enter book title: ");
-        String title = scanner.nextLine();
+        System.out.println("\n--- Search Books ---");
+        System.out.println("1. Search by Title");
+        System.out.println("2. Search by Author");
+        System.out.println("3. Search by ISBN");
+        System.out.print("Choose: ");
+        String opt = scanner.nextLine();
 
-        var results = BookRepository.findByTitle(title);
+        List<Book> results;
+
+        switch (opt) {
+            case "1":
+                System.out.print("Enter part of title: ");
+                results = bookService.searchByTitle(scanner.nextLine());
+                break;
+
+            case "2":
+                System.out.print("Enter part of author name: ");
+                results = bookService.searchByAuthor(scanner.nextLine());
+                break;
+
+            case "3":
+                System.out.print("Enter ISBN: ");
+                results = bookService.searchByIsbn(scanner.nextLine());
+                break;
+
+            default:
+                System.out.println("Invalid option.");
+                return;
+        }
+
         if (results.isEmpty()) System.out.println("No books found.");
         else {
-            System.out.println("\n--- Books ---");
-            for (Book b : results) {
-                System.out.println("- " + b.getTitle() + " | " + b.getAuthor());
+            System.out.println("\n--- Books Found ---");
+            for (int i = 0; i < results.size(); i++) {
+                Book b = results.get(i);
+                String avail = b.isBorrowed() ? "Borrowed" : "Available";
+                System.out.println((i+1) + ". " + b.getTitle() + " | " + b.getAuthor() + " | ISBN: " + b.getIsbn() + " | " + avail);
+            }
+
+            System.out.print("Select number to borrow or press Enter to return: ");
+            String sel = scanner.nextLine();
+            if (!sel.isBlank()) {
+                try {
+                    int index = Integer.parseInt(sel) - 1;
+                    if (index >= 0 && index < results.size()) {
+                        User logged = userService.getLoggedUser();
+                        if (logged == null) { System.out.println("Please login first."); return; }
+                        boolean ok = borrowService.borrowBookInstance(logged, results.get(index));
+                        System.out.println(ok ? "Book borrowed!" : "Cannot borrow this book.");
+                      } else {
+                        System.out.println("Invalid selection.");
+                      }
+                } catch (NumberFormatException e) {
+                    System.out.println("Invalid input.");
+                }
             }
         }
     }
+
+    // -------------------- CD SEARCH --------------------
 
     private static void searchCDs() {
-        System.out.print("Enter CD title: ");
-        String title = scanner.nextLine();
+        System.out.println("\n--- Search CDs ---");
+        System.out.println("1. Search by Title");
+        System.out.println("2. Search by Artist");
+        System.out.print("Choose: ");
+        String opt = scanner.nextLine();
 
-        var results = CDRepository.findByTitle(title);
+        List<CD> results;
+
+        switch (opt) {
+            case "1":
+                System.out.print("Enter part of title: ");
+                results = cdService.search(scanner.nextLine());
+                break;
+
+            case "2":
+                System.out.print("Enter part of artist: ");
+                results = cdService.search(scanner.nextLine());
+                break;
+
+            default:
+                System.out.println("Invalid option.");
+                return;
+        }
+
         if (results.isEmpty()) System.out.println("No CDs found.");
         else {
-            System.out.println("\n--- CDs ---");
-            for (CD cd : results) {
-                System.out.println("- " + cd.getTitle() + " | " + cd.getArtist());
+            System.out.println("\n--- CDs Found ---");
+            for (int i = 0; i < results.size(); i++) {
+                CD c = results.get(i);
+                String avail = c.isBorrowed() ? "Borrowed" : "Available";
+                System.out.println((i+1) + ". " + c.getTitle() + " | " + c.getArtist() + " | " + avail);
+            }
+
+            System.out.print("Select number to borrow or press Enter to return: ");
+            String sel = scanner.nextLine();
+            if (!sel.isBlank()) {
+                try {
+                    int index = Integer.parseInt(sel) - 1;
+                    if (index >= 0 && index < results.size()) {
+                        User logged = userService.getLoggedUser();
+                        if (logged == null) { System.out.println("Please login first."); return; }
+                        boolean ok = borrowService.borrowCDInstance(logged, results.get(index));
+                        System.out.println(ok ? "CD borrowed!" : "Cannot borrow this CD.");
+                      } else {
+                        System.out.println("Invalid selection.");
+                      }
+                } catch (NumberFormatException e) {
+                    System.out.println("Invalid input.");
+                }
             }
         }
     }
 
-    // =============================== USER SECTION =============================== //
+    // -------------------- USER SECTION --------------------
 
     private static void handleUserRegistration() {
-        System.out.print("Choose username: ");
+        System.out.print("Username: ");
         String username = scanner.nextLine();
-        System.out.print("Choose password: ");
+        System.out.print("Password: ");
         String password = scanner.nextLine();
-        System.out.print("Enter email: ");
+        System.out.print("Email: ");
         String email = scanner.nextLine();
 
-        if (userService.register(username, password, email)) {
-            System.out.println("User registered successfully!");
-        } else {
-            System.out.println("Username already exists!");
-        }
+        if (userService.register(username, password, email))
+            System.out.println("User registered!");
+        else
+            System.out.println("Registration failed.");
     }
 
     private static void handleUserLogin() {
-        System.out.print("Enter username: ");
+        System.out.print("Username: ");
         String username = scanner.nextLine();
-        System.out.print("Enter password: ");
+        System.out.print("Password: ");
         String password = scanner.nextLine();
 
         if (userService.login(username, password)) {
-            System.out.println("User login successful!");
+            System.out.println("Login successful!");
             userMenu();
         } else {
-            System.out.println("Login failed. Wrong username or password.");
+            System.out.println("Wrong credentials.");
         }
     }
 
-    // =============================== USER MENU =============================== //
-
     private static void userMenu() {
-        boolean userRunning = true;
         User logged = userService.getLoggedUser();
+        boolean running = true;
 
-        while (userRunning) {
+        while (running) {
             System.out.println("\n--- User Menu ---");
-            System.out.println("1. Search Books");
-            System.out.println("2. Search CDs");
-            System.out.println("3. Borrow Book");
-            System.out.println("4. Borrow CD");
-            System.out.println("5. View My Loans");
-            System.out.println("6. View Overdue Report");
-            System.out.println("7. Pay Fine");
-            System.out.println("8. Logout");
+            System.out.println("1. Search & Borrow Books");
+            System.out.println("2. Search & Borrow CDs");
+            System.out.println("3. Return Item");
+            System.out.println("4. View My Loans");
+            System.out.println("5. View Overdue Report");
+            System.out.println("6. Pay Fine");
+            System.out.println("7. Logout");
             System.out.print("Choose: ");
 
-            String option = scanner.nextLine();
-            switch (option) {
+            switch (scanner.nextLine()) {
                 case "1": searchBooks(); break;
                 case "2": searchCDs(); break;
-                case "3": borrowBook(logged); break;
-                case "4": borrowCD(logged); break;
-                case "5": viewUserLoans(logged); break;
-                case "6": System.out.println(overdueReportService.generateReport(logged)); break;
-                case "7": payFine(logged); break;
-                case "8":
-                    userService.logout();
-                    userRunning = false;
-                    System.out.println("Logged out.");
-                    break;
+                case "3": returnItemFlow(logged); break;
+                case "4": viewUserLoans(logged); break;
+                case "5": System.out.println(overdueReportService.generateReport(logged)); break;
+                case "6": payFine(logged); break;
+                case "7": running = false; break;
                 default: System.out.println("Invalid option.");
             }
         }
     }
 
-    // =============================== USER ACTIONS =============================== //
+    /**
+     * Flow to return an item: user chooses from their active loans, then the
+     * selected loan is marked returned and repositories updated.
+     *
+     * @param user logged-in user
+     */
+    private static void returnItemFlow(User user) {
+        List<Loan> loans = LoanRepository.getUserLoans(user.getUsername());
+        List<Loan> active = new java.util.ArrayList<>();
+        for (Loan l : loans) if (!l.isReturned()) active.add(l);
 
-    private static void borrowBook(User user) {
-        System.out.print("Enter book title: ");
-        String title = scanner.nextLine();
-        boolean ok = borrowService.borrowBook(user, title);
-        System.out.println(ok ? "Book borrowed!" : "Cannot borrow this book.");
-    }
+        if (active.isEmpty()) {
+            System.out.println("You have no active loans to return.");
+            return;
+        }
 
-    private static void borrowCD(User user) {
-        System.out.print("Enter CD title: ");
-        String title = scanner.nextLine();
-        boolean ok = borrowService.borrowCD(user, title);
-        System.out.println(ok ? "CD borrowed!" : "Cannot borrow this CD.");
+        System.out.println("\n--- Select Loan to Return ---");
+        for (int i = 0; i < active.size(); i++) {
+            Loan l = active.get(i);
+            System.out.println((i+1) + ". " + l.getItem().getTitle() + " | Due: " + l.getDueDate());
+        }
+        System.out.print("Select number to return or press Enter to cancel: ");
+        String s = scanner.nextLine();
+        if (s.isBlank()) return;
+        try {
+            int idx = Integer.parseInt(s)-1;
+            if (idx < 0 || idx >= active.size()) { System.out.println("Invalid selection."); return; }
+            Loan chosen = active.get(idx);
+            boolean ok = borrowService.returnItem(user, chosen.getItem());
+            System.out.println(ok ? "Item returned." : "Failed to return item.");
+        } catch (NumberFormatException e) {
+            System.out.println("Invalid input.");
+        }
     }
 
     private static void viewUserLoans(User user) {
         List<Loan> loans = LoanRepository.getUserLoans(user.getUsername());
         if (loans.isEmpty()) {
-            System.out.println("You have no loans.");
+            System.out.println("No loans.");
             return;
         }
 
         System.out.println("\n--- Your Loans ---");
         for (Loan l : loans) {
-            System.out.println("- " + l.getItem().getTitle() +
-                    " | Borrowed: " + l.getBorrowedDate() +
-                    " | Due: " + l.getDueDate() +
-                    (l.isOverdue() ? "OVERDUE" : "On time") +
-                    " | Fine: " + l.calculateFine());
+            System.out.println("- " + l.getItem().getTitle()
+                    + " | Borrowed: " + l.getBorrowedDate()
+                    + " | Due: " + l.getDueDate()
+                    + (l.isOverdue() ? " | OVERDUE" : ""));
         }
     }
 
     private static void payFine(User user) {
-        System.out.println("Your fine: " + user.getFineBalance());
-        System.out.print("Enter amount to pay: ");
+        System.out.println("Fine: " + user.getFineBalance());
+        System.out.print("Enter amount: ");
 
         try {
             double amount = Double.parseDouble(scanner.nextLine());
-            if (amount <= 0 || amount > user.getFineBalance()) {
+            if (user.payFine(amount))
+                {
+                    UserRepository.updateUser(user);
+                    System.out.println("Payment done.");
+                }
+            else
                 System.out.println("Invalid amount.");
-            } else {
-                user.payFine(amount);
-                System.out.println("Payment successful. Remaining fine: " + user.getFineBalance());
-            }
         } catch (Exception e) {
             System.out.println("Invalid input.");
         }
     }
 }
-
