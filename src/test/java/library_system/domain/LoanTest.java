@@ -1,11 +1,8 @@
-package Library_System.Domain;
+package library_system.domain;
 
 import org.junit.jupiter.api.Test;
 import java.time.LocalDate;
 import static org.junit.jupiter.api.Assertions.*;
-import library_system.domain.Book;
-import library_system.domain.Loan;
-import library_system.domain.User;
 
 public class LoanTest {
 

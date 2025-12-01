@@ -1,6 +1,5 @@
-package Library_System.Domain;
+package library_system.domain;
 
-import library_system.domain.*;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;

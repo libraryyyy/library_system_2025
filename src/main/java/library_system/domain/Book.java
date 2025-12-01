@@ -1,4 +1,5 @@
 package library_system.domain;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public class Book extends Media {
     private String author;
@@ -48,6 +49,7 @@ public class Book extends Media {
     /**
      * Uses {@link BookFineStrategy} for fine calculation.
      */
+    @JsonIgnore
     @Override
     public FineStrategy getFineStrategy() {
         return new BookFineStrategy();

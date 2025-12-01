@@ -1,6 +1,7 @@
 package library_system.Repository;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import library_system.domain.CD;
 
@@ -15,7 +16,7 @@ public class CDRepository {
     private static final List<CD> cds = new ArrayList<>();
 
     private static final String FILE_PATH = "src/main/resources/cds.json";
-    private static final ObjectMapper mapper = new ObjectMapper();
+    private static final ObjectMapper mapper = new ObjectMapper().registerModule(new JavaTimeModule());;
 
     // Load CDs from file at startup
     static {

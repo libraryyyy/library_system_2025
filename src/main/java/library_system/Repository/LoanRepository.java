@@ -2,6 +2,7 @@ package library_system.Repository;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import library_system.domain.Loan;
 import library_system.domain.User;
 
@@ -19,7 +20,7 @@ public class LoanRepository {
     private static final List<Loan> loans = new ArrayList<>();
 
     private static final String FILE_PATH = "src/main/resources/loans.json";
-    private static final ObjectMapper mapper = new ObjectMapper();
+    private static final ObjectMapper mapper = new ObjectMapper().registerModule(new JavaTimeModule());;
 
     // Load loans on startup
     static {

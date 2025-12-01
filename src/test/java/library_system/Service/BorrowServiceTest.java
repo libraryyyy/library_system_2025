@@ -1,4 +1,4 @@
-package Library_System.Service;
+package library_system.Service;
 
 import library_system.Repository.BookRepository;
 import library_system.Repository.LoanRepository;
@@ -21,13 +21,14 @@ class BorrowServiceTest {
 
     @BeforeEach
     void setup() {
-        borrowService = new BorrowService();
-        user = new User("sana", "123", "sana@example.com");
-
-        Book book = new Book("Java Basics", "John Doe", "111111");
         BookRepository.clear();
         CDRepository.clear();
         LoanRepository.clear();
+        borrowService = new BorrowService();
+        user = new User("sana", "123", "sana@example.com");
+
+        book = new Book("Java Basics", "John Doe", "111111");
+
     }
 
     @Test

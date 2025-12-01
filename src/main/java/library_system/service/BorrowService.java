@@ -14,7 +14,7 @@ import java.util.List;
  */
 public class BorrowService {
 
-    private final OverdueReportService overdueReportService = new OverdueReportService();
+  //  private final OverdueReportService overdueReportService = new OverdueReportService();
     /**
      * @param user the user attempting to borrow
      * @return true if allowed, false otherwise
@@ -22,13 +22,17 @@ public class BorrowService {
     public boolean canBorrow(User user) {
 
 
-        if (user == null) return false;
         if (user.getFineBalance() > 0) {
             return false;
         }
+        if (LoanRepository.hasActiveLoans(user)) {
+            return false;
+        }
+        if (LoanRepository.hasOverdueLoans(user)) {
+            return false;
+        }
 
-        OverdueReport report = overdueReportService.generateReport(user);
-        return report.getOverdueLoans().isEmpty();
+        return true;
     }
 
     /**
@@ -38,9 +42,8 @@ public class BorrowService {
      */
     private boolean borrow(User user, Media item) {
 
-        if (user == null || item == null) return false;
         if (!canBorrow(user)) return false;
-        if ( item.isBorrowed()) return false;
+        if ( item == null || item.isBorrowed() ) return false;
 
         Loan loan = new Loan(user, item);
         LoanRepository.addLoan(loan);
@@ -64,7 +67,13 @@ public class BorrowService {
                 .findFirst()
                 .orElse(null);
 
-        return borrow(user, book);
+        if (borrow(user, book)) {
+            System.out.println("Book borrowed");
+            return true;
+        }
+
+        System.out.println("Book borrow failed");
+        return false;
     }
 
     // ----------------------------------------------------
@@ -84,7 +93,13 @@ public class BorrowService {
         List<CD> list = CDRepository.findByTitle(title);
         CD cd = list.stream().filter(c -> !c.isBorrowed()).findFirst().orElse(null);
 
-        return borrow(user, cd);
+        if (borrow(user, cd)) {
+            System.out.println("CD borrowed");
+            return true;
+        }
+
+        System.out.println("CD borrow failed");
+        return false;
     }
 
 }

@@ -1,5 +1,7 @@
 package library_system.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 public class CD extends Media {
     private String artist;
     public CD() {
@@ -33,7 +35,7 @@ public class CD extends Media {
     public int getBorrowDuration() {
         return 7;
     }
-
+    @JsonIgnore
     @Override
     public FineStrategy getFineStrategy() {
         return new CDFineStrategy();

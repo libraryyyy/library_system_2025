@@ -48,15 +48,16 @@ public class UserService {
      */
     public String unregisterUser(User user) {
 
-        // 1. Check active loans
+        // 1. Check overdue loans
+        if (LoanRepository.hasOverdueLoans(user)) {
+            return "Cannot unregister: User has overdue loans.";
+        }
+        // 2. Check active loans
         if (LoanRepository.hasActiveLoans(user)) {
             return "Cannot unregister: User has active loans.";
         }
 
-        // 2. Check overdue loans
-        if (LoanRepository.hasOverdueLoans(user)) {
-            return "Cannot unregister: User has overdue loans.";
-        }
+
 
         // 3. Check unpaid fines
         if (user.getFineBalance() > 0) {

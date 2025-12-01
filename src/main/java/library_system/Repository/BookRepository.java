@@ -1,6 +1,7 @@
 package library_system.Repository;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import library_system.domain.Book;
 import java.io.File;
 import java.util.ArrayList;
@@ -12,7 +13,7 @@ public class BookRepository {
     /** Internal list that stores all books in memory. */
     private static final List<Book> books = new ArrayList<>();
     private static final String FILE_PATH = "src/main/resources/books.json";
-    private static final ObjectMapper mapper = new ObjectMapper();
+    private static final ObjectMapper mapper = new ObjectMapper().registerModule(new JavaTimeModule());;
 
 
     // Load data at startup

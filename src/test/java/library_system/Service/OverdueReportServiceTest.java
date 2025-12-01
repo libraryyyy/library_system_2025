@@ -1,4 +1,4 @@
-package Library_System.Service;
+package library_system.Service;
 
 import library_system.Repository.LoanRepository;
 import library_system.domain.*;
