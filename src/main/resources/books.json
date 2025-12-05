@@ -1,0 +1,141 @@
+[ {
+  "mediaType" : "BOOK",
+  "title" : "Harry Potter and the Sorcerer's Stone",
+  "borrowed" : true,
+  "author" : "J. K. Rowling",
+  "isbn" : "001",
+  "borrowDuration" : 28
+}, {
+  "mediaType" : "BOOK",
+  "title" : "Harry Potter and the Chamber of Secrets",
+  "borrowed" : false,
+  "author" : "J. K. Rowling",
+  "isbn" : "002",
+  "borrowDuration" : 28
+}, {
+  "mediaType" : "BOOK",
+  "title" : "Harry Potter and the Prisoner of Azkaban",
+  "borrowed" : false,
+  "author" : "J. K. Rowling",
+  "isbn" : "003",
+  "borrowDuration" : 28
+}, {
+  "mediaType" : "BOOK",
+  "title" : "Harry Potter and the Goblet of Fire",
+  "borrowed" : false,
+  "author" : "J. K. Rowling",
+  "isbn" : "004",
+  "borrowDuration" : 28
+}, {
+  "mediaType" : "BOOK",
+  "title" : "Harry Potter and the Order of the Phoenix",
+  "borrowed" : false,
+  "author" : "J. K. Rowling",
+  "isbn" : "005",
+  "borrowDuration" : 28
+}, {
+  "mediaType" : "BOOK",
+  "title" : "Harry Potter and the Half-Blood Prince",
+  "borrowed" : false,
+  "author" : "J. K. Rowling",
+  "isbn" : "006",
+  "borrowDuration" : 28
+}, {
+  "mediaType" : "BOOK",
+  "title" : "Harry Potter and the Deathly Hallows",
+  "borrowed" : false,
+  "author" : "J. K. Rowling",
+  "isbn" : "007",
+  "borrowDuration" : 28
+}, {
+  "mediaType" : "BOOK",
+  "title" : "The Little Prince",
+  "borrowed" : false,
+  "author" : "Antoine de Saint-Exupéry",
+  "isbn" : "008",
+  "borrowDuration" : 28
+}, {
+  "mediaType" : "BOOK",
+  "title" : "1984",
+  "borrowed" : false,
+  "author" : "George Orwell",
+  "isbn" : "009",
+  "borrowDuration" : 28
+}, {
+  "mediaType" : "BOOK",
+  "title" : "The Great Gatsby",
+  "borrowed" : false,
+  "author" : "F. Scott Fitzgerald",
+  "isbn" : "010",
+  "borrowDuration" : 28
+}, {
+  "mediaType" : "BOOK",
+  "title" : "To Kill a Mockingbird",
+  "borrowed" : false,
+  "author" : "Harper Lee",
+  "isbn" : "011",
+  "borrowDuration" : 28
+}, {
+  "mediaType" : "BOOK",
+  "title" : "Pride and Prejudice",
+  "borrowed" : false,
+  "author" : "Jane Austen",
+  "isbn" : "012",
+  "borrowDuration" : 28
+}, {
+  "mediaType" : "BOOK",
+  "title" : "The Alchemist",
+  "borrowed" : false,
+  "author" : "Paulo Coelho",
+  "isbn" : "013",
+  "borrowDuration" : 28
+}, {
+  "mediaType" : "BOOK",
+  "title" : "The Hobbit",
+  "borrowed" : false,
+  "author" : "J. R. R. Tolkien",
+  "isbn" : "014",
+  "borrowDuration" : 28
+}, {
+  "mediaType" : "BOOK",
+  "title" : "The Catcher in the Rye",
+  "borrowed" : false,
+  "author" : "J. D. Salinger",
+  "isbn" : "015",
+  "borrowDuration" : 28
+}, {
+  "mediaType" : "BOOK",
+  "title" : "The Da Vinci Code",
+  "borrowed" : false,
+  "author" : "Dan Brown",
+  "isbn" : "016",
+  "borrowDuration" : 28
+}, {
+  "mediaType" : "BOOK",
+  "title" : "The Hunger Games",
+  "borrowed" : false,
+  "author" : "Suzanne Collins",
+  "isbn" : "017",
+  "borrowDuration" : 28
+}, {
+  "mediaType" : "BOOK",
+  "title" : "The Fault in Our Stars",
+  "borrowed" : false,
+  "author" : "John Green",
+  "isbn" : "018",
+  "borrowDuration" : 28
+}, {
+  "mediaType" : "BOOK",
+  "title" : "The Book Thief",
+  "borrowed" : false,
+  "author" : "Markus Zusak",
+  "isbn" : "019",
+  "borrowDuration" : 28
+}, {
+  "mediaType" : "BOOK",
+  "title" : "Animal Farm",
+  "borrowed" : false,
+  "author" : "George Orwell",
+  "isbn" : "020",
+  "borrowDuration" : 28
+} ]

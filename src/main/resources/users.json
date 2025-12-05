@@ -1,0 +1,21 @@
+[ {
+  "username" : "sana",
+  "password" : "0000",
+  "email" : "sanajabrr023@gmail.com",
+  "fineBalance" : 0.0
+}, {
+  "username" : "lina",
+  "password" : "1111",
+  "email" : "lina@hotmail.com",
+  "fineBalance" : 0.0
+}, {
+  "username" : "mohammed",
+  "password" : "2222",
+  "email" : "mohammed@yahoo.com",
+  "fineBalance" : 0.0
+}, {
+  "username" : "reem",
+  "password" : "abcd",
+  "email" : "reem@gmail.com",
+  "fineBalance" : 0.0
+} ]
