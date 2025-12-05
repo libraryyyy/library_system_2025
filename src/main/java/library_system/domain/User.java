@@ -43,6 +43,15 @@ public class User {
     }
 
     /**
+     * Returns the display name of the user (same as username in this system).
+     * Used primarily for personalized notifications.
+     *
+     * @return the username as display name
+     */
+    public String getName() {
+        return username;
+    }
+    /**
      * Returns the username used for login.
      *
      * @return username string

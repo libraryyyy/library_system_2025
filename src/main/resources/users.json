@@ -1,0 +1,22 @@
+[ {
+  "username" : "jana",
+  "password" : "1234",
+  "email" : "s122340856@stu.najah.edu",
+  "fineBalance" : 0.0,
+  "name" : "jana",
+  "validEmail" : true
+}, {
+  "username" : "rama",
+  "password" : "1234",
+  "email" : "s12340856@stu.najah.edu",
+  "fineBalance" : 0.0,
+  "name" : "rama",
+  "validEmail" : true
+}, {
+  "username" : "ssara",
+  "password" : "1234",
+  "email" : "saraabdaldayem1969@gmail.com",
+  "fineBalance" : 0.0,
+  "name" : "ssara",
+  "validEmail" : true
+} ]

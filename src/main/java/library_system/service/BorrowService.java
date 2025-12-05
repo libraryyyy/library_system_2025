@@ -10,7 +10,7 @@ import java.util.List;
 /**
  * Service handling borrowing logic for books and CDs.
  */
-public class BorrowService {
+/*public class BorrowService {
 
     // No fixed maximum enforced here; business rules are enforced via LoanRepository checks.
 
@@ -25,7 +25,7 @@ public class BorrowService {
      * @param user the user attempting to borrow
      * @return true if allowed
      */
-    public boolean canBorrow(User user) {
+ /*   public boolean canBorrow(User user) {
         if (user == null) return false;
         if (user.getFineBalance() > 0) return false;
         // disallow borrow if user has any active loans or any overdue loans
@@ -42,7 +42,7 @@ public class BorrowService {
      * @param item the media item (may be an instance returned by search)
      * @return true if borrowing succeeded
      */
-    private boolean borrow(User user, Media item) {
+   /* private boolean borrow(User user, Media item) {
 
         if (!canBorrow(user)) return false;
         if (item == null) return false;
@@ -96,7 +96,7 @@ public class BorrowService {
      * @param title book title search string
      * @return true if successful
      */
-    public boolean borrowBook(User user, String title) {
+ /*   public boolean borrowBook(User user, String title) {
 
         List<Book> list = BookRepository.findByTitle(title);
         Book book = list.stream()
@@ -114,7 +114,7 @@ public class BorrowService {
      * @param title CD title search string
      * @return true if successful
      */
-    public boolean borrowCD(User user, String title) {
+ /*   public boolean borrowCD(User user, String title) {
 
         List<CD> list = CDRepository.findByTitle(title);
         CD cd = list.stream()
@@ -132,7 +132,8 @@ public class BorrowService {
      * @param book book instance selected by the user
      * @return true if borrowing succeeded
      */
-    public boolean borrowBookInstance(User user, Book book) {
+
+  /*  public boolean borrowBookInstance(User user, Book book) {
         return borrow(user, book);
     }
 
@@ -143,7 +144,7 @@ public class BorrowService {
      * @param cd CD instance selected by the user
      * @return true if borrowing succeeded
      */
-    public boolean borrowCDInstance(User user, CD cd) {
+   /* public boolean borrowCDInstance(User user, CD cd) {
         return borrow(user, cd);
     }
 
@@ -155,7 +156,7 @@ public class BorrowService {
      * @param item the media item to return (Book or CD)
      * @return true if return succeeded (an active loan was found and updated)
      */
-    public boolean returnItem(User user, Media item) {
+   /* public boolean returnItem(User user, Media item) {
         if (user == null || item == null) return false;
 
         Loan loan = LoanRepository.findActiveLoan(user, item);
@@ -170,6 +171,67 @@ public class BorrowService {
 
         // Mark loan returned
         LoanRepository.markLoanReturned(loan);
+        return true;
+    }
+}
+*/
+
+
+
+
+import library_system.Repository.LoanRepository;
+import library_system.domain.*;
+
+public class BorrowService {
+
+    public boolean borrowBookInstance(User user, Book book) {
+        return borrowMedia(user, book);
+    }
+
+    public boolean borrowCDInstance(User user, CD cd) {
+        return borrowMedia(user, cd);
+    }
+
+    private boolean borrowMedia(User user, Media media) {
+        if (user.getFineBalance() > 0) {
+            System.out.println("لا يمكنك الاستعارة: لديك غرامة مستحقة: " + user.getFineBalance() + " NIS");
+            return false;
+        }
+        if (LoanRepository.hasOverdueLoans(user)) {
+            System.out.println("لا يمكنك الاستعارة: لديك عناصر متأخرة!");
+            return false;
+        }
+        if (media.isBorrowed()) {
+            System.out.println("العنصر مستعار حالياً.");
+            return false;
+        }
+
+        Loan loan = new Loan(user, media);
+        media.setBorrowed(true);
+        LoanRepository.addLoan(loan);
+
+        System.out.println("تمت الاستعارة بنجاح! موعد الإرجاع: " + loan.getDueDate());
+        return true;
+    }
+
+    public boolean returnItem(User user, Media item) {
+        Loan loan = LoanRepository.findActiveLoan(user, item);
+        if (loan == null) {
+            System.out.println("لا توجد استعارة نشطة.");
+            return false;
+        }
+
+        loan.markReturned();
+        item.setBorrowed(false);
+        LoanRepository.saveToFile();
+
+        int fine = loan.calculateFine();
+        if (fine > 0) {
+            user.addFine(fine);
+            System.out.println("تم الإرجاع مع غرامة: " + fine + " NIS");
+        } else {
+            System.out.println("تم الإرجاع بنجاح.");
+        }
         return true;
     }
 }

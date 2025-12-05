@@ -31,6 +31,8 @@
             <version>5.10.0</version>
             <scope>test</scope>
         </dependency>
+
+
         <!-- JACKSON for JSON serialization -->
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>

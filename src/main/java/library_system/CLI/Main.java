@@ -4,7 +4,6 @@ import library_system.Repository.*;
 import library_system.domain.*;
 import library_system.notification.EmailNotifier;
 import library_system.service.*;
-
 import java.util.List;
 import java.util.Scanner;
 
@@ -12,7 +11,6 @@ import java.util.Scanner;
  * Console-based CLI for the Library Management System.
  */
 public class Main {
-
     private static final Scanner scanner = new Scanner(System.in);
     private static final AdminService adminService = new AdminService();
     private static final UserService userService = new UserService();
@@ -21,7 +19,6 @@ public class Main {
     private static final BorrowService borrowService = new BorrowService();
     private static final OverdueReportService overdueReportService = new OverdueReportService();
     private static final ReminderService reminderService = new ReminderService();
-
     /**
      * Application entry point.
      *
@@ -29,12 +26,30 @@ public class Main {
      */
     public static void main(String[] args) {
 
+        BookRepository.loadFromFile();
+
+        // الآن يمكننا الوصول إلى الكتب المخزنة
+        System.out.println("Loaded books: " + BookRepository.getBooks());
         UserRepository.loadFromFile();
         BookRepository.loadFromFile();
         CDRepository.loadFromFile();
         LoanRepository.loadFromFile();
 
-        reminderService.addObserver(new EmailNotifier("your_email@gmail.com", "app_password"));
+        try {
+            reminderService.addObserver(new EmailNotifier(
+                    "saraabdaldayem1969@gmail.com",
+                    "oylkqfgwngrcunf"   // ← حط الـ App Password هنا
+            ));
+            System.out.println("تم تفعيل إرسال الإيميلات الحقيقية بنجاح!");
+        } catch (Exception e) {
+            System.out.println("فشل تفعيل الإرسال الحقيقي، تم تفعيل وضع الطباعة في الكونسول...");
+            reminderService.addObserver((userEmail, subject) -> {
+                System.out.println("\nإيميل وهمي (لأن الإرسال فشل):");
+                System.out.println("إلى: " + userEmail);
+                System.out.println("الموضوع: " + subject);
+                System.out.println("-".repeat(50));
+            });
+        }
 
         System.out.println("=== Library Management System ===");
 

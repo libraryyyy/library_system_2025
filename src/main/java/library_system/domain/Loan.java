@@ -110,9 +110,9 @@ public class Loan {
      * @return true if overdue and not returned
      */
     public boolean isOverdue() {
-        if (returned) return false;
-        if (dueDate == null) return false;
-        return LocalDate.now().isAfter(dueDate);
+
+            return !returned && dueDate != null && LocalDate.now().isAfter(dueDate);
+
     }
 
     /**

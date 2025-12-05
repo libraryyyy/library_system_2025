@@ -1,0 +1,121 @@
+[ {
+  "user" : {
+    "username" : "sara",
+    "password" : "1234",
+    "email" : "saraabdaldayem1969@gmail.com",
+    "fineBalance" : 0.0,
+    "name" : "sara",
+    "validEmail" : true
+  },
+  "item" : {
+    "mediaType" : "BOOK",
+    "id" : "bd8a4bcb-3377-4e52-80cc-b85c4fed2aa4",
+    "title" : "jana",
+    "borrowed" : true,
+    "author" : "rama",
+    "isbn" : "1234",
+    "borrowDuration" : 14,
+    "mediaType" : "BOOK"
+  },
+  "borrowedDate" : "2025-12-04",
+  "dueDate" : "2026-01-01",
+  "returned" : false,
+  "overdue" : false,
+  "overdueDays" : 0
+}, {
+  "user" : {
+    "username" : "jana",
+    "password" : "1234",
+    "email" : "s12340856@stu.najah.edu",
+    "fineBalance" : 0.0,
+    "name" : "jana",
+    "validEmail" : true
+  },
+  "item" : {
+    "mediaType" : "BOOK",
+    "id" : "c0c10cb3-b819-4956-9bcf-f2c256c71e25",
+    "title" : "sara",
+    "borrowed" : true,
+    "author" : "sara",
+    "isbn" : "1234",
+    "borrowDuration" : 14,
+    "mediaType" : "BOOK"
+  },
+  "borrowedDate" : "2025-12-05",
+  "dueDate" : "2025-12-19",
+  "returned" : false,
+  "overdue" : false,
+  "overdueDays" : 0
+}, {
+  "user" : {
+    "username" : "jana",
+    "password" : "1234",
+    "email" : "s122340856@stu.najah.edu",
+    "fineBalance" : 0.0,
+    "name" : "jana",
+    "validEmail" : true
+  },
+  "item" : {
+    "mediaType" : "BOOK",
+    "id" : "e9f0e1fe-c173-4529-a26e-8ca363df87d1",
+    "title" : "sara",
+    "borrowed" : true,
+    "author" : "sara",
+    "isbn" : "1234",
+    "borrowDuration" : 14,
+    "mediaType" : "BOOK"
+  },
+  "borrowedDate" : "2025-12-05",
+  "dueDate" : "2025-12-19",
+  "returned" : false,
+  "overdue" : false,
+  "overdueDays" : 0
+}, {
+  "user" : {
+    "username" : "rama",
+    "password" : "1234",
+    "email" : "s12340856@stu.najah.edu",
+    "fineBalance" : 0.0,
+    "name" : "rama",
+    "validEmail" : true
+  },
+  "item" : {
+    "mediaType" : "BOOK",
+    "id" : "e1ece6c9-79e8-4c62-9b68-d8a71e438940",
+    "title" : "sere",
+    "borrowed" : true,
+    "author" : "sere",
+    "isbn" : "1234",
+    "borrowDuration" : 14,
+    "mediaType" : "BOOK"
+  },
+  "borrowedDate" : "2025-12-05",
+  "dueDate" : "2025-12-19",
+  "returned" : false,
+  "overdue" : false,
+  "overdueDays" : 0
+}, {
+  "user" : {
+    "username" : "ssara",
+    "password" : "1234",
+    "email" : "saraabdaldayem1969@gmail.com",
+    "fineBalance" : 0.0,
+    "name" : "ssara",
+    "validEmail" : true
+  },
+  "item" : {
+    "mediaType" : "BOOK",
+    "id" : "e1ece6c9-79e8-4c62-9b68-d8a71e438940",
+    "title" : "sere",
+    "borrowed" : true,
+    "author" : "sere",
+    "isbn" : "1234",
+    "borrowDuration" : 14,
+    "mediaType" : "BOOK"
+  },
+  "borrowedDate" : "2025-12-05",
+  "dueDate" : "2025-12-19",
+  "returned" : false,
+  "overdue" : false,
+  "overdueDays" : 0
+} ]

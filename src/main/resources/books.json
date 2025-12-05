@@ -1,0 +1,17 @@
+[ {
+  "id" : "e9f0e1fe-c173-4529-a26e-8ca363df87d1",
+  "title" : "sara",
+  "borrowed" : true,
+  "author" : "sara",
+  "isbn" : "1234",
+  "borrowDuration" : 14,
+  "mediaType" : "BOOK"
+}, {
+  "id" : "e1ece6c9-79e8-4c62-9b68-d8a71e438940",
+  "title" : "sere",
+  "borrowed" : false,
+  "author" : "sere",
+  "isbn" : "1234",
+  "borrowDuration" : 14,
+  "mediaType" : "BOOK"
+} ]
