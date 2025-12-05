@@ -1,194 +1,87 @@
 package library_system.Repository;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import library_system.domain.Book;
+import com.fasterxml.jackson.core.type.TypeReference;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Repository for managing Book objects persisted to JSON.
- * <p>
- * Provides load/save operations that ensure polymorphic type information
- * (the "mediaType" discriminator) is present. Also contains search helpers.
- * </p>
- */
 public class BookRepository {
 
     private static final List<Book> books = new ArrayList<>();
-    private static final ObjectMapper mapper = MapperProvider.MAPPER;
-    private static final String FILE_NAME = "books.json";
+    private static final String FILE_PATH = "src/main/resources/books.json";
 
-    private static final File FILE = FileUtil.getDataFile(FILE_NAME);
+    private static final ObjectMapper mapper = new ObjectMapper()
+            .registerModule(new JavaTimeModule());
 
-    /**
-     * Loads books from JSON file. If the file or entries lack the required
-     * polymorphic "mediaType" property, this method will attempt to repair
-     * the data and rewrite the corrected JSON back to disk.
-     */
+    // دالة التحميل من الملف
     public static void loadFromFile() {
         try {
-            if (!FILE.exists() || FILE.length() == 0) {
-                // ensure an empty array file exists
-                saveToFile();
-                return;
+            File file = new File(FILE_PATH);
+            if (file.exists() && file.length() > 0) {
+                books.clear(); // مهم عشان ما يتكررش الكتب
+                books.addAll(mapper.readValue(file, new TypeReference<List<Book>>() {}));
             }
-
-            JsonNode root = mapper.readTree(FILE);
-            ArrayNode array;
-            if (root == null || root.isNull()) {
-                array = mapper.createArrayNode();
-            } else if (root.isArray()) {
-                array = (ArrayNode) root;
-            } else {
-                // single object -> wrap into array
-                array = mapper.createArrayNode();
-                array.add(root);
-            }
-
-            boolean fixed = false;
-            for (int i = 0; i < array.size(); i++) {
-                JsonNode node = array.get(i);
-                if (node != null && node.isObject()) {
-                    ObjectNode obj = (ObjectNode) node;
-                    if (!obj.has("mediaType") || obj.get("mediaType").isNull() || obj.get("mediaType").asText().isEmpty()) {
-                        // Best-effort detection: books have 'isbn' or 'author' fields
-                        if (obj.has("isbn") || obj.has("author")) {
-                            obj.put("mediaType", "BOOK");
-                            fixed = true;
-                        }
-                    }
-                }
-            }
-
-            if (fixed) {
-                // rewrite corrected JSON back to file
-                mapper.writerWithDefaultPrettyPrinter().writeValue(FILE, array);
-            }
-
-            // convert JSON array to list of Book instances
-            List<Book> loaded = mapper.convertValue(array, new TypeReference<>() {});
-            books.clear();
-            books.addAll(loaded);
-
+            System.out.println("Loaded books: " + books.size());
         } catch (Exception e) {
-            System.err.println("Error loading books.json: " + e.getMessage());
-            // attempt to initialize an empty file to avoid repeated errors
-            try {
-                saveToFile();
-            } catch (Exception ignore) {}
+            System.out.println("Error loading books: " + e.getMessage());
+            books.clear();
         }
     }
 
-    /**
-     * Saves the in-memory book list to disk and ensures each object contains
-     * the "mediaType" discriminator required by Jackson polymorphic deserialization.
-     */
     public static void saveToFile() {
         try {
-            // Ensure every saved object includes the mediaType property
-            ArrayNode array = mapper.createArrayNode();
-            for (Book b : books) {
-                ObjectNode obj = mapper.convertValue(b, ObjectNode.class);
-                // set mediaType explicitly to be safe
-                obj.put("mediaType", "BOOK");
-                array.add(obj);
-            }
-            mapper.writerWithDefaultPrettyPrinter().writeValue(FILE, array);
+            mapper.writerWithDefaultPrettyPrinter()
+                    .writeValue(new File(FILE_PATH), books);
         } catch (Exception e) {
-            System.err.println("Error saving books.json: " + e.getMessage());
+            System.out.println("Error saving books: " + e.getMessage());
         }
     }
 
-    /**
-     * Adds a book and persists the repository.
-     *
-     * @param book the book to add
-     */
-    public static void addBook(Book book) {
-        books.add(book);
+    public static List<Book> getBooks() {
+        return books;
+    }
+
+    public static List<Book> getAll() {
+        return books;
+    }
+
+    public static void addBook(Book b) {
+        books.add(b);
         saveToFile();
     }
 
-    // -------- SEARCH METHODS --------
-
-    /**
-     * Finds books whose title contains the given substring (case-insensitive).
-     *
-     * @param title substring to search for
-     * @return list of matching Book instances (empty if none)
-     */
-    public static List<Book> findByTitle(String title) {
-        if (title == null) return new ArrayList<>();
-        title = title.toLowerCase();
-        List<Book> result = new ArrayList<>();
-
-        for (Book b : books) {
-            if (b.getTitle().toLowerCase().contains(title)) {
-                result.add(b);
-            }
-        }
-        return result;
-    }
-
-    /**
-     * Finds books whose author contains the given substring (case-insensitive).
-     *
-     * @param author substring to search for
-     * @return list of matching Book instances (empty if none)
-     */
-    public static List<Book> findByAuthor(String author) {
-        if (author == null) return new ArrayList<>();
-        author = author.toLowerCase();
-        List<Book> result = new ArrayList<>();
-
-        for (Book b : books) {
-            if (b.getAuthor().toLowerCase().contains(author)) {
-                result.add(b);
-            }
-        }
-        return result;
-    }
-
-    /**
-     * Finds books whose ISBN contains the given substring (case-insensitive).
-     *
-     * @param isbn substring to search for
-     * @return list of matching Book instances (empty if none)
-     */
-    public static List<Book> findByIsbn(String isbn) {
-        if (isbn == null) return new ArrayList<>();
-        String q = isbn.toLowerCase().trim();
-        List<Book> result = new ArrayList<>();
-
-        for (Book b : books) {
-            String bi = b.getIsbn() == null ? "" : b.getIsbn().toLowerCase();
-            if (bi.contains(q)) {
-                result.add(b);
-            }
-        }
-        return result;
-    }
-
-    /**
-     * Returns all books in memory (defensive copy of the internal list).
-     *
-     * @return list of all Book instances currently held in the repository
-     */
-    public static List<Book> getAll() {
-        return new ArrayList<>(books);
-    }
-
-    /**
-     * Clears all books from the repository and persists the empty state (for testing).
-     */
     public static void clear() {
         books.clear();
         saveToFile();
+    }
+
+    // البحث بالعنوان (جزئي)
+    public static List<Book> findByTitleContaining(String part) {
+        return books.stream()
+                .filter(b -> b.getTitle().toLowerCase().contains(part.toLowerCase()))
+                .toList();
+    }
+
+    // البحث بالعنوان (تطابق تام)
+    public static List<Book> findByTitle(String title) {
+        return books.stream()
+                .filter(book -> book.getTitle().equalsIgnoreCase(title))
+                .toList();
+    }
+
+    public static List<Book> findByAuthor(String author) {
+        return books.stream()
+                .filter(b -> b.getAuthor().equalsIgnoreCase(author))
+                .toList();
+    }
+
+    public static List<Book> findByIsbn(String isbn) {
+        return books.stream()
+                .filter(b -> b.getIsbn().equalsIgnoreCase(isbn))
+                .toList();
     }
 }

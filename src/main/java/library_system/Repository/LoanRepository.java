@@ -28,11 +28,13 @@ public class LoanRepository {
      */
     public static void loadFromFile() {
         try {
+            // إذا الملف غير موجود أو طوله 0 ← ننشئ واحد فارغ ثم نرجع
             if (!FILE.exists() || FILE.length() == 0) {
                 saveToFile();
                 return;
             }
 
+            // اقرأ الشجرة الخام أولاً — لنستطيع "إصلاح" حقول mediaType المفقودة داخل item
             JsonNode root = mapper.readTree(FILE);
             ArrayNode array;
             if (root == null || root.isNull()) {
@@ -52,6 +54,7 @@ public class LoanRepository {
                     JsonNode itemNode = loanObj.get("item");
                     if (itemNode != null && itemNode.isObject()) {
                         ObjectNode itemObj = (ObjectNode) itemNode;
+                        // إذا mediaType مفقود أو فارغ نحاول استنتاجه
                         if (!itemObj.has("mediaType") || itemObj.get("mediaType").isNull() || itemObj.get("mediaType").asText().isEmpty()) {
                             if (itemObj.has("isbn") || itemObj.has("author")) {
                                 itemObj.put("mediaType", "BOOK");
@@ -65,16 +68,20 @@ public class LoanRepository {
                 }
             }
 
+            // إذا أصلحنا الشجرة — أعد الكتابة للملف (pretty) لتصحيح البيانات
             if (fixed) {
                 mapper.writerWithDefaultPrettyPrinter().writeValue(FILE, array);
             }
 
-            List<Loan> loaded = mapper.convertValue(array, new TypeReference<>() {});
+            // الآن اقرأ كقائمة Loan بشكل صريح (هذا يضمن أن Jackson يقوم بالـ deserialization الصحيح)
+            List<Loan> loaded = mapper.readValue(FILE, mapper.getTypeFactory().constructCollectionType(List.class, Loan.class));
             loans.clear();
             loans.addAll(loaded);
 
         } catch (Exception e) {
             System.err.println("Error loading loans.json: " + e.getMessage());
+            // حافظ على قائمة فارغة عند حدوث خطأ
+            loans.clear();
         }
     }
 

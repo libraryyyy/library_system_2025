@@ -1,21 +1,9 @@
 [ {
   "user" : {
-    "username" : "sana",
-    "password" : "0000",
-    "email" : "sanajabrr023@gmail.com",
-    "fineBalance" : 0.0
   },
   "item" : {
     "mediaType" : "BOOK",
-    "title" : "Harry Potter and the Sorcerer's Stone",
     "borrowed" : true,
-    "author" : "J. K. Rowling",
-    "isbn" : "001",
-    "borrowDuration" : 28
   },
-  "borrowedDate" : "2025-12-01",
-  "dueDate" : "2025-12-29",
   "returned" : false,
-  "overdue" : false,
-  "overdueDays" : 0
 } ]

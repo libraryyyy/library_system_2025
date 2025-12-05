@@ -1,140 +1,107 @@
 package library_system.Repository;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import library_system.domain.CD;
+import com.fasterxml.jackson.core.type.TypeReference;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Repository for storing and retrieving CDs.
- */
 public class CDRepository {
 
     private static final List<CD> cds = new ArrayList<>();
-    private static final ObjectMapper mapper = MapperProvider.MAPPER;
-    private static final String FILE_NAME = "cds.json";
-    private static final File FILE = FileUtil.getDataFile(FILE_NAME);
+    private static final String FILE_PATH = "src/main/resources/cds.json";
 
-    /**
-     * Loads CDs from JSON — repairs missing mediaType values.
-     */
+    private static final ObjectMapper mapper = new ObjectMapper()
+            .registerModule(new JavaTimeModule());
+
+    // دالة التحميل من الملف (مطابقة للـ BookRepository)
     public static void loadFromFile() {
         try {
-            if (!FILE.exists() || FILE.length() == 0) {
-                mapper.writerWithDefaultPrettyPrinter()
-                        .writeValue(FILE, new ArrayList<>());
+            File file = new File(FILE_PATH);
+            if (file.exists() && file.length() > 0) {
+                cds.clear(); // مهم جدًا عشان ما يتكررش الـ CDs
+                List<CD> loaded = mapper.readValue(file, new TypeReference<List<CD>>() {});
+                cds.addAll(loaded);
+                System.out.println("Loaded CDs: " + cds.size());
+            } else {
+                System.out.println("No CDs file found or empty - starting with empty list.");
                 cds.clear();
-                return;
+                saveToFile(); // إنشاء ملف فارغ من أول مرة
             }
-
-            // read raw JSON
-            JsonNode root = mapper.readTree(FILE);
-
-            if (root == null || !root.isArray()) {
-                cds.clear();
-                mapper.writerWithDefaultPrettyPrinter()
-                        .writeValue(FILE, new ArrayList<>());
-                return;
-            }
-
-            ArrayNode array = (ArrayNode) root;
-            boolean fixed = false;
-
-            for (JsonNode node : array) {
-                if (node instanceof ObjectNode obj) {
-                    if (!obj.has("mediaType")) {
-                        obj.put("mediaType", "CD");
-                        fixed = true;
-                    }
-                }
-            }
-
-            if (fixed) {
-                mapper.writerWithDefaultPrettyPrinter()
-                        .writeValue(FILE, array);
-            }
-
-            // deserialize PROPERLY (important)
-            List<CD> loaded = mapper.readValue(FILE, new TypeReference<List<CD>>() {});
-            cds.clear();
-            cds.addAll(loaded);
-
         } catch (Exception e) {
-            System.err.println("Error loading cds.json: " + e.getMessage());
+            System.out.println("Error loading CDs: " + e.getMessage());
+            e.printStackTrace();
             cds.clear();
+            saveToFile(); // لو في مشكلة، نحفظ نسخة نظيفة
         }
     }
 
-    /**
-     * Writes CDs to JSON.
-     */
+    // دالة الحفظ (مرتبة وجميلة)
     public static void saveToFile() {
         try {
-            ArrayNode array = mapper.createArrayNode();
-            for (CD cd : cds) {
-                ObjectNode obj = mapper.valueToTree(cd);
-                obj.put("mediaType", "CD");
-                array.add(obj);
-            }
-            mapper.writerWithDefaultPrettyPrinter().writeValue(FILE, array);
+            mapper.writerWithDefaultPrettyPrinter()
+                    .writeValue(new File(FILE_PATH), cds);
+            System.out.println("CDs saved successfully: " + cds.size());
         } catch (Exception e) {
-            System.err.println("Error saving cds.json: " + e.getMessage());
+            System.out.println("Error saving CDs: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
-    /** Add CD */
-    public static void addCD(CD cd) {
-        cds.add(cd);
-        saveToFile();
-    }
-
-    /** Search by title or artist */
-    public static List<CD> search(String keyword) {
-        if (keyword == null) return new ArrayList<>();
-        keyword = keyword.toLowerCase();
-        List<CD> result = new ArrayList<>();
-        for (CD cd : cds) {
-            if (cd.getTitle().toLowerCase().contains(keyword)
-                    || cd.getArtist().toLowerCase().contains(keyword)) {
-                result.add(cd);
-            }
-        }
-        return result;
-    }
-
-    /** Partial title search */
-    public static List<CD> findByTitle(String title) {
-        if (title == null) return new ArrayList<>();
-        title = title.toLowerCase();
-        List<CD> result = new ArrayList<>();
-        for (CD cd : cds) {
-            if (cd.getTitle().toLowerCase().contains(title)) {
-                result.add(cd);
-            }
-        }
-        return result;
-    }
-
-    /** Return ALL CDs — SAME instances */
+    // إرجاع القائمة (آمنة)
     public static List<CD> getAll() {
         return new ArrayList<>(cds);
     }
 
-    /** Remove CD */
-    public static void removeCD(CD cd) {
-        cds.remove(cd);
+    // إضافة CD وحفظ فوري
+    public static void addCD(CD cd) {
+        cds.add(cd);
         saveToFile();
+        System.out.println("CD added: " + cd.getTitle() + " by " + cd.getArtist());
     }
 
-    /** Clear repository */
+    // مسح الكل
     public static void clear() {
         cds.clear();
         saveToFile();
+        System.out.println("All CDs cleared.");
+    }
+
+    // البحث بالعنوان (جزئي) - زي الكتب
+    public static List<CD> findByTitleContaining(String part) {
+        return cds.stream()
+                .filter(cd -> cd.getTitle().toLowerCase().contains(part.toLowerCase()))
+                .toList();
+    }
+
+    // البحث بالفنان (جزئي)
+    public static List<CD> findByArtistContaining(String part) {
+        return cds.stream()
+                .filter(cd -> cd.getArtist() != null &&
+                        cd.getArtist().toLowerCase().contains(part.toLowerCase()))
+                .toList();
+    }
+
+    // البحث العام (يستخدم في القائمة)
+    public static List<CD> search(String keyword) {
+        if (keyword == null || keyword.trim().isEmpty()) {
+            return getAll();
+        }
+        String lower = keyword.toLowerCase();
+        return cds.stream()
+                .filter(cd -> cd.getTitle().toLowerCase().contains(lower) ||
+                        (cd.getArtist() != null && cd.getArtist().toLowerCase().contains(lower)))
+                .toList();
+    }
+
+    // دالة مساعدة: إرجاع CD حسب الـ ID
+    public static CD findById(String id) {
+        return cds.stream()
+                .filter(cd -> cd.getId().equals(id))
+                .findFirst()
+                .orElse(null);
     }
 }

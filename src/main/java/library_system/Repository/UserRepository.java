@@ -29,11 +29,12 @@ public class UserRepository {
      */
     public static void loadFromFile() {
         try {
-            List<User> loaded = FileUtil.readList(FILE, new TypeReference<>() {}, mapper);
+            List<User> loaded = FileUtil.readList(FILE, new TypeReference<List<User>>() {}, mapper);
             users.clear();
             users.addAll(loaded);
         } catch (Exception e) {
             users = new ArrayList<>();
+            System.err.println("Error loading users.json: " + e.getMessage());
         }
     }
 
