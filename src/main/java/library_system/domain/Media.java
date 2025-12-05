@@ -17,13 +17,21 @@ public abstract class Media {
     protected String title;
     protected boolean borrowed;
 
-    protected Media() {}
+    // هذا الحقل ضروري جدًا عشان Jackson يحفظ ويحمل الـ borrowDuration
+    @JsonProperty("borrowDuration")
+    protected int borrowDuration;
 
-    protected Media(String title) {
+    protected Media() {
         this.id = java.util.UUID.randomUUID().toString();
-        this.title = title;
         this.borrowed = false;
     }
+
+    protected Media(String title) {
+        this();
+        this.title = title;
+    }
+
+    // ====== Getters & Setters ======
 
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
@@ -34,6 +42,15 @@ public abstract class Media {
     public boolean isBorrowed() { return borrowed; }
     public void setBorrowed(boolean borrowed) { this.borrowed = borrowed; }
 
+    // مهم جدًا: Jackson يستخدمه لحفظ وقراءة الـ borrowDuration من الـ JSON
+    public int getBorrowDuration() {
+        return borrowDuration;
+    }
+
+    public void setBorrowDuration(int borrowDuration) {
+        this.borrowDuration = borrowDuration;
+    }
+
     @JsonProperty("mediaType")
     public String getMediaType() {
         return this instanceof Book ? "BOOK" :
@@ -42,14 +59,16 @@ public abstract class Media {
 
     @JsonProperty("mediaType")
     public void setMediaType(String mediaType) {
-        // Jackson uses this for deserialization
+        // لا نحتاج نعمل شيء هنا، Jackson يستخدمه للـ deserialization فقط
     }
 
-    public abstract int getBorrowDuration();
+    // هذه الدالتين يجب أن تُعرّف في Book و CD
     public abstract FineStrategy getFineStrategy();
 
     @Override
     public String toString() {
-        return title + " (ID: " + id + ") - " + (borrowed ? "Borrowed" : "Available");
+        return title + " (ID: " + id + ") - " +
+                (borrowed ? "معار" : "متوفر") +
+                " | مدة الإعارة: " + borrowDuration + " يوم";
     }
 }

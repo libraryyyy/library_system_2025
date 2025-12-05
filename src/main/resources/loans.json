@@ -20,8 +20,8 @@
   "borrowedDate" : "2025-12-04",
   "dueDate" : "2026-01-01",
   "returned" : false,
-  "overdue" : false,
-  "overdueDays" : 0
+  "overdueDays" : 0,
+  "overdue" : false
 }, {
   "user" : {
     "username" : "jana",
@@ -44,8 +44,8 @@
   "borrowedDate" : "2025-12-05",
   "dueDate" : "2025-12-19",
   "returned" : false,
-  "overdue" : false,
-  "overdueDays" : 0
+  "overdueDays" : 0,
+  "overdue" : false
 }, {
   "user" : {
     "username" : "jana",
@@ -68,8 +68,8 @@
   "borrowedDate" : "2025-12-05",
   "dueDate" : "2025-12-19",
   "returned" : false,
-  "overdue" : false,
-  "overdueDays" : 0
+  "overdueDays" : 0,
+  "overdue" : false
 }, {
   "user" : {
     "username" : "rama",
@@ -92,8 +92,8 @@
   "borrowedDate" : "2025-12-05",
   "dueDate" : "2025-12-19",
   "returned" : false,
-  "overdue" : false,
-  "overdueDays" : 0
+  "overdueDays" : 0,
+  "overdue" : false
 }, {
   "user" : {
     "username" : "ssara",
@@ -116,6 +116,53 @@
   "borrowedDate" : "2025-12-05",
   "dueDate" : "2025-12-19",
   "returned" : false,
-  "overdue" : false,
-  "overdueDays" : 0
+  "overdueDays" : 0,
+  "overdue" : false
+}, {
+  "user" : {
+    "username" : "jana",
+    "password" : "1234",
+    "email" : "s122340856@stu.najah.edu",
+    "fineBalance" : 0.0,
+    "name" : "jana",
+    "validEmail" : true
+  },
+  "item" : {
+    "mediaType" : "BOOK",
+    "id" : "e1ece6c9-79e8-4c62-9b68-d8a71e438940",
+    "title" : "sere",
+    "borrowed" : true,
+    "author" : "sere",
+    "isbn" : "1234",
+    "borrowDuration" : 14,
+    "mediaType" : "BOOK"
+  },
+  "borrowedDate" : "2025-12-05",
+  "dueDate" : "2025-12-19",
+  "returned" : false,
+  "overdueDays" : 0,
+  "overdue" : false
+}, {
+  "user" : {
+    "username" : "jana",
+    "password" : "1234",
+    "email" : "s122340856@stu.najah.edu",
+    "fineBalance" : 0.0,
+    "name" : "jana",
+    "validEmail" : true
+  },
+  "item" : {
+    "mediaType" : "CD",
+    "id" : "3fc8d03f-3a7f-4dee-b24c-d95f240d4e7d",
+    "title" : "sss",
+    "borrowed" : true,
+    "artist" : "sss",
+    "borrowDuration" : 7,
+    "mediaType" : "CD"
+  },
+  "borrowedDate" : "2025-12-05",
+  "dueDate" : "2025-12-12",
+  "returned" : false,
+  "overdueDays" : 0,
+  "overdue" : false
 } ]

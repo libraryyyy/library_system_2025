@@ -1,1 +1,8 @@
-[ ]
+[ {
+  "id" : "3fc8d03f-3a7f-4dee-b24c-d95f240d4e7d",
+  "title" : "sss",
+  "borrowed" : false,
+  "artist" : "sss",
+  "borrowDuration" : 7,
+  "mediaType" : "CD"
+} ]
