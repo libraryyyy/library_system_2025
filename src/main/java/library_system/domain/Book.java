@@ -24,13 +24,23 @@ public class Book extends Media {
     public String getIsbn() { return isbn; }
     public void setIsbn(String isbn) { this.isbn = isbn; }
 
+    @JsonProperty("quantity")
+    public int getQuantity() {
+        return super.getQuantity();
+    }
+
+    @JsonProperty("quantity")
+    public void setQuantity(int q) {
+        super.setQuantity(q);
+    }
+
     @Override
     public int getBorrowDuration() {
         return 14;
     }
 
     @Override
-    @JsonIgnore  // مهم عشان ما يتحفظش في الـ JSON
+    @JsonIgnore  // Important: do not serialize fine strategy into JSON
     public FineStrategy getFineStrategy() {
         return new BookFineStrategy();
     }

@@ -1,107 +1,185 @@
 package library_system.Repository;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import library_system.domain.CD;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import library_system.domain.CD;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Repository for CD objects with JSON persistence and auto-repair of missing fields.
+ */
 public class CDRepository {
 
     private static final List<CD> cds = new ArrayList<>();
     private static final String FILE_PATH = "src/main/resources/cds.json";
 
-    private static final ObjectMapper mapper = new ObjectMapper()
-            .registerModule(new JavaTimeModule());
+    private static final ObjectMapper mapper = MapperProvider.MAPPER;
 
-    // دالة التحميل من الملف (مطابقة للـ BookRepository)
+    /**
+     * Loads CDs from file and repairs missing mediaType/quantity fields and removes unwanted fields.
+     */
     public static void loadFromFile() {
         try {
             File file = new File(FILE_PATH);
-            if (file.exists() && file.length() > 0) {
-                cds.clear(); // مهم جدًا عشان ما يتكررش الـ CDs
-                List<CD> loaded = mapper.readValue(file, new TypeReference<List<CD>>() {});
-                cds.addAll(loaded);
-                System.out.println("Loaded CDs: " + cds.size());
-            } else {
-                System.out.println("No CDs file found or empty - starting with empty list.");
+            if (!file.exists() || file.length() == 0) {
+                FileUtil.ensureDataDirExists();
+                mapper.writerWithDefaultPrettyPrinter().writeValue(file, List.of());
                 cds.clear();
-                saveToFile(); // إنشاء ملف فارغ من أول مرة
+                return;
             }
-        } catch (Exception e) {
-            System.out.println("Error loading CDs: " + e.getMessage());
-            e.printStackTrace();
+
+            JsonNode root = mapper.readTree(file);
+            ArrayNode array;
+            if (root == null || root.isNull()) {
+                array = mapper.createArrayNode();
+            } else if (root.isArray()) {
+                array = (ArrayNode) root;
+            } else {
+                array = mapper.createArrayNode();
+                array.add(root);
+            }
+
+            boolean fixed = false;
+            ArrayNode cleaned = mapper.createArrayNode();
+            for (JsonNode node : array) {
+                if (node == null || !node.isObject()) continue;
+                ObjectNode obj = (ObjectNode) node;
+                ObjectNode clean = mapper.createObjectNode();
+                // Ensure mediaType
+                if (!obj.has("mediaType") || obj.get("mediaType").isNull() || obj.get("mediaType").asText().isEmpty()) {
+                    clean.put("mediaType", "CD");
+                    fixed = true;
+                } else clean.put("mediaType", obj.get("mediaType").asText());
+                if (obj.has("title")) clean.put("title", obj.get("title").asText());
+                if (obj.has("artist")) clean.put("artist", obj.get("artist").asText());
+                if (obj.has("quantity") && obj.get("quantity").canConvertToInt()) clean.put("quantity", obj.get("quantity").asInt());
+                else { clean.put("quantity", 1); fixed = true; }
+                if (obj.has("borrowDuration")) clean.put("borrowDuration", obj.get("borrowDuration").asInt());
+                cleaned.add(clean);
+            }
+
+            if (fixed) mapper.writerWithDefaultPrettyPrinter().writeValue(file, cleaned);
+
+            List<CD> loaded = mapper.readValue(file, new TypeReference<List<CD>>() {});
             cds.clear();
-            saveToFile(); // لو في مشكلة، نحفظ نسخة نظيفة
+            cds.addAll(loaded);
+
+            for (CD c : cds) if (c != null) c.setQuantity(Math.max(0, c.getQuantity()));
+
+        } catch (Exception e) {
+            System.err.println("Error loading CDs: " + e.getMessage());
+            cds.clear();
         }
     }
 
-    // دالة الحفظ (مرتبة وجميلة)
+    /**
+     * Saves CDs to JSON with cleaned structure.
+     */
     public static void saveToFile() {
         try {
-            mapper.writerWithDefaultPrettyPrinter()
-                    .writeValue(new File(FILE_PATH), cds);
-            System.out.println("CDs saved successfully: " + cds.size());
+            ArrayNode arr = mapper.createArrayNode();
+            for (CD c : cds) {
+                ObjectNode obj = mapper.createObjectNode();
+                obj.put("mediaType", "CD");
+                if (c.getTitle() != null) obj.put("title", c.getTitle());
+                if (c.getArtist() != null) obj.put("artist", c.getArtist());
+                obj.put("quantity", c.getQuantity());
+                obj.put("borrowDuration", c.getBorrowDuration());
+                arr.add(obj);
+            }
+            FileUtil.writeAtomic(new File(FILE_PATH), arr, mapper);
         } catch (Exception e) {
-            System.out.println("Error saving CDs: " + e.getMessage());
-            e.printStackTrace();
+            System.err.println("Error saving CDs: " + e.getMessage());
         }
     }
 
-    // إرجاع القائمة (آمنة)
+    /**
+     * Returns the live in-memory list of CDs.
+     *
+     * @return live list
+     */
     public static List<CD> getAll() {
-        return new ArrayList<>(cds);
+        return cds;
     }
 
-    // إضافة CD وحفظ فوري
+    /**
+     * Adds a CD and persists.
+     *
+     * @param cd CD to add
+     */
     public static void addCD(CD cd) {
+        if (cd == null) return;
+        if (cd.getQuantity() <= 0) cd.setQuantity(1);
         cds.add(cd);
         saveToFile();
-        System.out.println("CD added: " + cd.getTitle() + " by " + cd.getArtist());
     }
 
-    // مسح الكل
+    /**
+     * Clears CDs and persists.
+     */
     public static void clear() {
         cds.clear();
         saveToFile();
-        System.out.println("All CDs cleared.");
     }
 
-    // البحث بالعنوان (جزئي) - زي الكتب
+    /**
+     * Case-insensitive partial match on title.
+     *
+     * @param part substring
+     * @return matching CDs
+     */
     public static List<CD> findByTitleContaining(String part) {
-        return cds.stream()
-                .filter(cd -> cd.getTitle().toLowerCase().contains(part.toLowerCase()))
-                .toList();
-    }
-
-    // البحث بالفنان (جزئي)
-    public static List<CD> findByArtistContaining(String part) {
-        return cds.stream()
-                .filter(cd -> cd.getArtist() != null &&
-                        cd.getArtist().toLowerCase().contains(part.toLowerCase()))
-                .toList();
-    }
-
-    // البحث العام (يستخدم في القائمة)
-    public static List<CD> search(String keyword) {
-        if (keyword == null || keyword.trim().isEmpty()) {
-            return getAll();
+        if (part == null || part.isBlank()) return new ArrayList<>(cds);
+        String lower = part.toLowerCase();
+        List<CD> res = new ArrayList<>();
+        for (CD c : cds) {
+            if (c.getTitle() != null && c.getTitle().toLowerCase().contains(lower)) res.add(c);
         }
-        String lower = keyword.toLowerCase();
-        return cds.stream()
-                .filter(cd -> cd.getTitle().toLowerCase().contains(lower) ||
-                        (cd.getArtist() != null && cd.getArtist().toLowerCase().contains(lower)))
-                .toList();
+        return res;
     }
 
-    // دالة مساعدة: إرجاع CD حسب الـ ID
-    public static CD findById(String id) {
-        return cds.stream()
-                .filter(cd -> cd.getId().equals(id))
-                .findFirst()
-                .orElse(null);
+    /**
+     * Case-insensitive partial match on artist.
+     *
+     * @param part substring
+     * @return matching CDs
+     */
+    public static List<CD> findByArtistContaining(String part) {
+        if (part == null || part.isBlank()) return new ArrayList<>(cds);
+        String lower = part.toLowerCase();
+        List<CD> res = new ArrayList<>();
+        for (CD c : cds) if (c.getArtist() != null && c.getArtist().toLowerCase().contains(lower)) res.add(c);
+        return res;
     }
-}
+
+    /**
+     * General search across title and artist.
+     *
+     * @param keyword keyword
+     * @return matching CDs
+     */
+    public static List<CD> search(String keyword) {
+        if (keyword == null || keyword.trim().isEmpty()) return new ArrayList<>(cds);
+        String lower = keyword.toLowerCase();
+        List<CD> res = new ArrayList<>();
+        for (CD c : cds) if ((c.getTitle() != null && c.getTitle().toLowerCase().contains(lower)) || (c.getArtist() != null && c.getArtist().toLowerCase().contains(lower))) res.add(c);
+        return res;
+    }
+
+    /**
+     * Finds a CD by id.
+     *
+     * @param id id
+     * @return CD or null
+     */
+    public static CD findById(String id) {
+        if (id == null) return null;
+        for (CD c : cds) if (c.getId().equals(id)) return c;
+        return null;
+    }}

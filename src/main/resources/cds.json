@@ -1,3 +1,7 @@
 [ {
-  "borrowed" : false,
+  "mediaType" : "CD",
+  "title" : "Fearless",
+  "artist" : "Taylor Swift",
+  "quantity" : 1,
+  "borrowDuration" : 7
 } ]

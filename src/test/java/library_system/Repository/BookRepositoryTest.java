@@ -12,10 +12,12 @@ public class BookRepositoryTest {
 
     @BeforeEach
     public void setup() {
+        BookRepository.clear();
     }
 
     @AfterEach
     public void tearDown() {
+        BookRepository.clear();
     }
 
     @Test

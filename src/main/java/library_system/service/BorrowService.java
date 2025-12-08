@@ -5,233 +5,133 @@ import library_system.Repository.CDRepository;
 import library_system.Repository.LoanRepository;
 import library_system.domain.*;
 
-import java.util.List;
-
 /**
- * Service handling borrowing logic for books and CDs.
+ * Service handling borrowing and returning logic for books and CDs.
  */
-/*public class BorrowService {
-
-    // No fixed maximum enforced here; business rules are enforced via LoanRepository checks.
+public class BorrowService {
 
     /**
-     * Checks whether the user is allowed to borrow a new item.
+     * Attempts to borrow a book instance (should be a repository-held instance or equivalent).
      *
-     * Conditions:
-     * - No unpaid fines
-     * - No overdue loans
-     * - No active loans
-     *
-     * @param user the user attempting to borrow
-     * @return true if allowed
+     * @param user the borrowing user
+     * @param book the book to borrow
+     * @return true if borrow succeeded
      */
- /*   public boolean canBorrow(User user) {
-        if (user == null) return false;
-        if (user.getFineBalance() > 0) return false;
-        // disallow borrow if user has any active loans or any overdue loans
-        if (LoanRepository.hasActiveLoans(user)) return false;
-        if (LoanRepository.hasOverdueLoans(user)) return false;
-        return true;
+    public boolean borrowBookInstance(User user, Book book) {
+        return borrowMedia(user, book);
     }
 
     /**
-     * Internal borrowing method used by both book and CD.
-     * Operates on repository-held instances to preserve identity.
+     * Attempts to borrow a CD instance (should be a repository-held instance or equivalent).
      *
-     * @param user the user borrowing
-     * @param item the media item (may be an instance returned by search)
-     * @return true if borrowing succeeded
+     * @param user the borrowing user
+     * @param cd the CD to borrow
+     * @return true if borrow succeeded
      */
-   /* private boolean borrow(User user, Media item) {
+    public boolean borrowCDInstance(User user, CD cd) {
+        return borrowMedia(user, cd);
+    }
 
-        if (!canBorrow(user)) return false;
-        if (item == null) return false;
+    private boolean borrowMedia(User user, Media media) {
+        if (user == null || media == null) return false;
 
-        // Ensure we operate on the repository-held instance so reference equality is preserved
-        Media repoItem = item;
-        if (item instanceof Book) {
-            Book wanted = (Book) item;
-            for (Book b : BookRepository.getAll()) {
-                if (b.getIsbn() != null && wanted.getIsbn() != null && b.getIsbn().equalsIgnoreCase(wanted.getIsbn())) {
+        if (user.getFineBalance() > 0) {
+            System.out.println("You cannot borrow: outstanding fines: " + user.getFineBalance());
+            return false;
+        }
+        if (LoanRepository.hasOverdueLoans(user)) {
+            System.out.println("You cannot borrow: you have overdue items.");
+            return false;
+        }
+
+        // Find repository-held instance to update quantity
+        Media repoItem = media;
+        if (media instanceof Book) {
+            Book wanted = (Book) media;
+            for (Book b : BookRepository.getBooks()) {
+                if (wanted.getIsbn() != null && b.getIsbn() != null && wanted.getIsbn().equalsIgnoreCase(b.getIsbn())) {
                     repoItem = b;
                     break;
                 }
-                if (b.getTitle() != null && wanted.getTitle() != null && b.getTitle().equalsIgnoreCase(wanted.getTitle())
-                        && b.getAuthor() != null && wanted.getAuthor() != null && b.getAuthor().equalsIgnoreCase(wanted.getAuthor())) {
+                if (wanted.getTitle() != null && b.getTitle() != null && wanted.getTitle().equalsIgnoreCase(b.getTitle())
+                        && wanted.getAuthor() != null && b.getAuthor() != null && wanted.getAuthor().equalsIgnoreCase(b.getAuthor())) {
                     repoItem = b;
                     break;
                 }
             }
-        } else if (item instanceof CD) {
-            CD wanted = (CD) item;
+        } else if (media instanceof CD) {
+            CD wanted = (CD) media;
             for (CD c : CDRepository.getAll()) {
-                if (c.getTitle() != null && wanted.getTitle() != null && c.getTitle().equalsIgnoreCase(wanted.getTitle())
-                        && c.getArtist() != null && wanted.getArtist() != null && c.getArtist().equalsIgnoreCase(wanted.getArtist())) {
+                if (wanted.getTitle() != null && c.getTitle() != null && wanted.getTitle().equalsIgnoreCase(c.getTitle())
+                        && ((wanted.getArtist() == null && c.getArtist() == null) || (wanted.getArtist() != null && c.getArtist() != null && wanted.getArtist().equalsIgnoreCase(c.getArtist())))) {
                     repoItem = c;
                     break;
                 }
             }
         }
 
-        if (repoItem.isBorrowed()) return false;
-
-        // mark repository item as borrowed and persist changes
-        repoItem.setBorrowed(true);
-        if (repoItem instanceof Book) {
-            BookRepository.saveToFile();
-        } else if (repoItem instanceof CD) {
-            CDRepository.saveToFile();
+        // Use quantity as source of truth
+        if (repoItem.getQuantity() <= 0) {
+            System.out.println("Item unavailable. Quantity is zero.");
+            return false;
         }
+
+        // Prevent duplicate active loan
+        if (LoanRepository.userHasActiveLoanForItem(user, repoItem)) {
+            System.out.println("You already borrowed this item. Please return it first.");
+            return false;
+        }
+
+        // Decrease quantity and persist
+        repoItem.setQuantity(repoItem.getQuantity() - 1);
+
+        if (repoItem instanceof Book) BookRepository.saveToFile();
+        if (repoItem instanceof CD) CDRepository.saveToFile();
 
         Loan loan = new Loan(user, repoItem);
         LoanRepository.addLoan(loan);
 
+        System.out.println("Borrow successful! You have borrowed: " + repoItem.getTitle());
         return true;
     }
 
     /**
-     * Attempts to borrow a book by searching with title.
+     * Returns a borrowed item for the user.
      *
-     * @param user user borrowing
-     * @param title book title search string
-     * @return true if successful
+     * @param user the user returning
+     * @param item the media being returned
+     * @return true if return succeeded
      */
- /*   public boolean borrowBook(User user, String title) {
-
-        List<Book> list = BookRepository.findByTitle(title);
-        Book book = list.stream()
-                .filter(b -> !b.isBorrowed())
-                .findFirst()
-                .orElse(null);
-
-        return borrow(user, book);
-    }
-
-    /**
-     * Attempts to borrow a CD by title search.
-     *
-     * @param user user borrowing
-     * @param title CD title search string
-     * @return true if successful
-     */
- /*   public boolean borrowCD(User user, String title) {
-
-        List<CD> list = CDRepository.findByTitle(title);
-        CD cd = list.stream()
-                .filter(c -> !c.isBorrowed())
-                .findFirst()
-                .orElse(null);
-
-        return borrow(user, cd);
-    }
-
-    /**
-     * Attempts to borrow the specified Book instance (repository-held or search result).
-     *
-     * @param user user borrowing the book
-     * @param book book instance selected by the user
-     * @return true if borrowing succeeded
-     */
-
-  /*  public boolean borrowBookInstance(User user, Book book) {
-        return borrow(user, book);
-    }
-
-    /**
-     * Attempts to borrow the specified CD instance (repository-held or search result).
-     *
-     * @param user user borrowing the CD
-     * @param cd CD instance selected by the user
-     * @return true if borrowing succeeded
-     */
-   /* public boolean borrowCDInstance(User user, CD cd) {
-        return borrow(user, cd);
-    }
-
-    /**
-     * Returns a borrowed item for the user. Marks the associated loan returned
-     * and sets the media 'borrowed' flag to false, persisting both changes.
-     *
-     * @param user the user returning the item
-     * @param item the media item to return (Book or CD)
-     * @return true if return succeeded (an active loan was found and updated)
-     */
-   /* public boolean returnItem(User user, Media item) {
+    public boolean returnItem(User user, Media item) {
         if (user == null || item == null) return false;
 
         Loan loan = LoanRepository.findActiveLoan(user, item);
-        if (loan == null) return false;
+        if (loan == null) {
+            System.out.println("You have no active loan for this item.");
+            return false;
+        }
 
-        // Update repository-held media instance
+        // Update loan and repo item
+        loan.markReturned();
         Media repoItem = loan.getItem();
         if (repoItem == null) return false;
-        repoItem.setBorrowed(false);
+
+        // Increase quantity
+        repoItem.setQuantity(repoItem.getQuantity() + 1);
+
         if (repoItem instanceof Book) BookRepository.saveToFile();
         if (repoItem instanceof CD) CDRepository.saveToFile();
 
-        // Mark loan returned
         LoanRepository.markLoanReturned(loan);
-        return true;
-    }
-}
-*/
-
-
-
-
-import library_system.Repository.LoanRepository;
-import library_system.domain.*;
-
-public class BorrowService {
-
-    public boolean borrowBookInstance(User user, Book book) {
-        return borrowMedia(user, book);
-    }
-
-    public boolean borrowCDInstance(User user, CD cd) {
-        return borrowMedia(user, cd);
-    }
-
-    private boolean borrowMedia(User user, Media media) {
-        if (user.getFineBalance() > 0) {
-            System.out.println("لا يمكنك الاستعارة: لديك غرامة مستحقة: " + user.getFineBalance() + " NIS");
-            return false;
-        }
-        if (LoanRepository.hasOverdueLoans(user)) {
-            System.out.println("لا يمكنك الاستعارة: لديك عناصر متأخرة!");
-            return false;
-        }
-        if (media.isBorrowed()) {
-            System.out.println("العنصر مستعار حالياً.");
-            return false;
-        }
-
-        Loan loan = new Loan(user, media);
-        media.setBorrowed(true);
-        LoanRepository.addLoan(loan);
-
-        System.out.println("تمت الاستعارة بنجاح! موعد الإرجاع: " + loan.getDueDate());
-        return true;
-    }
-
-    public boolean returnItem(User user, Media item) {
-        Loan loan = LoanRepository.findActiveLoan(user, item);
-        if (loan == null) {
-            System.out.println("لا توجد استعارة نشطة.");
-            return false;
-        }
-
-        loan.markReturned();
-        item.setBorrowed(false);
-        LoanRepository.saveToFile();
-
         int fine = loan.calculateFine();
         if (fine > 0) {
             user.addFine(fine);
-            System.out.println("تم الإرجاع مع غرامة: " + fine + " NIS");
+            library_system.Repository.UserRepository.updateUser(user);
+            System.out.println("Return completed with fine: " + fine + " NIS");
         } else {
-            System.out.println("تم الإرجاع بنجاح.");
+            System.out.println("Return successful.");
         }
+
         return true;
     }
 }

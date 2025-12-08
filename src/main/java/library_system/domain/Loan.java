@@ -1,23 +1,35 @@
 package library_system.domain;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 
+/**
+ * Represents a loan (a user borrowing a media item).
+ * <p>
+ * This class stores the borrowing user, the borrowed media item, borrowed/due dates,
+ * and the returned flag. It provides helpers to compute overdue days and fines.
+ * </p>
+ */
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class Loan {
 
     /** The user who borrowed the item. */
     private User user;
 
     /**
-     * The borrowed media item (Book or CD).
-     * Jackson type info ensures correct polymorphic JSON loading.
+     * The borrowed media item (Book or CD). Jackson type info ensures correct polymorphic JSON loading.
      */
     private Media item;
 
     /** The date the item was borrowed. */
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     private LocalDate borrowedDate;
 
     /** The due date calculated based on media borrow duration. */
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     private LocalDate dueDate;
 
     /** Whether the media has been returned by the user. */
@@ -40,37 +52,65 @@ public class Loan {
         this.returned = false;
     }
 
-    /** @return the borrowing user */
+    /**
+     * Returns the borrowing user.
+     *
+     * @return the user who borrowed the item
+     */
     public User getUser() {
         return user;
     }
 
-    /** @return the borrowed media item */
+    /**
+     * Returns the borrowed media item.
+     *
+     * @return the media item (Book or CD)
+     */
     public Media getItem() {
         return item;
     }
 
-    /** @return the date the item was borrowed */
+    /**
+     * Returns the date the item was borrowed.
+     *
+     * @return borrowed date (LocalDate)
+     */
     public LocalDate getBorrowedDate() {
         return borrowedDate;
     }
 
-    /** @return the date the item is due */
+    /**
+     * Returns the date the item is due.
+     *
+     * @return due date (LocalDate)
+     */
     public LocalDate getDueDate() {
         return dueDate;
     }
 
-    /** @return true if the media was returned */
+    /**
+     * Returns whether the media was returned.
+     *
+     * @return true if returned
+     */
     public boolean isReturned() {
         return returned;
     }
 
-    /** @param user sets the borrowing user */
+    /**
+     * Sets the borrowing user (used by deserialization).
+     *
+     * @param user the user
+     */
     public void setUser(User user) {
         this.user = user;
     }
 
-    /** @param item sets the borrowed media item */
+    /**
+     * Sets the borrowed media item (used by deserialization).
+     *
+     * @param item the media item
+     */
     public void setItem(Media item) {
         this.item = item;
     }
@@ -89,17 +129,27 @@ public class Loan {
         }
     }
 
-    /** @param date new due date (mainly for testing/JSON) */
+    /**
+     * Sets the due date (mainly for testing/JSON).
+     *
+     * @param date new due date
+     */
     public void setDueDate(LocalDate date) {
         this.dueDate = date;
     }
 
-    /** @param returned sets return status */
+    /**
+     * Sets the return status of this loan.
+     *
+     * @param returned true when returned
+     */
     public void setReturned(boolean returned) {
         this.returned = returned;
     }
 
-    /** Marks the loan as returned. */
+    /**
+     * Marks the loan as returned.
+     */
     public void markReturned() {
         this.returned = true;
     }
@@ -110,9 +160,7 @@ public class Loan {
      * @return true if overdue and not returned
      */
     public boolean isOverdue() {
-
-            return !returned && dueDate != null && LocalDate.now().isAfter(dueDate);
-
+        return !returned && dueDate != null && LocalDate.now().isAfter(dueDate);
     }
 
     /**

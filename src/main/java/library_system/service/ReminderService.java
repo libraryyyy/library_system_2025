@@ -12,10 +12,10 @@ import java.util.*;
 
 /**
  * Service responsible for sending overdue reminders to users via registered observers.
- *<p>
+ * <p>
  * The {@link #sendOverdueReminders()} method returns a status code:
  * 0 = no users, 1 = users exist but no overdue, 2 = reminders sent.
- *</p>
+ * </p>
  */
 public class ReminderService {
 
@@ -81,14 +81,16 @@ public class ReminderService {
                 message = "You have " + cdCount + " overdue CD(s).";
             }
 
+            boolean userNotified = false;
             for (Observer observer : observers) {
                 try {
                     observer.notify(user, message);
-                    anySent = true;
+                    userNotified = true;
                 } catch (Exception ex) {
                     System.err.println("Failed to notify user " + username + ": " + ex.getMessage());
                 }
             }
+            if (userNotified) anySent = true;
         }
 
         return anySent ? 2 : 1;

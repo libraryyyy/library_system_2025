@@ -9,7 +9,7 @@ public class CD extends Media {
 
     public CD() {
         super();
-        this.borrowDuration = 7;  // CD تُعار 7 أيام
+        this.borrowDuration = 7;  // CDs are loaned for 7 days
     }
 
     public CD(String title, String artist) {
@@ -21,8 +21,14 @@ public class CD extends Media {
     public String getArtist() { return artist; }
     public void setArtist(String artist) { this.artist = artist; }
 
+    @JsonProperty("quantity")
+    public int getQuantity() { return super.getQuantity(); }
+
+    @JsonProperty("quantity")
+    public void setQuantity(int q) { super.setQuantity(q); }
+
     @Override
-    @JsonIgnore  // ← هذا السطر اللي هيحل كل المشكلة إن شاء الله
+    @JsonIgnore  // Prevents fine strategy from being serialized
     public FineStrategy getFineStrategy() {
         return new CDFineStrategy();
     }
@@ -30,7 +36,7 @@ public class CD extends Media {
     @Override
     public String toString() {
         return "CD: " + getTitle() + " - " + artist +
-                " | مدة الإعارة: 7 أيام" +
-                (isBorrowed() ? " [معار]" : " [متوفر]");
+                " | Borrow Time: 7 Days" +
+                (getQuantity() > 0 ? " [Available]" : " [Not Available]");
     }
 }

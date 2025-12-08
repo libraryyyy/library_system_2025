@@ -6,7 +6,12 @@ import library_system.domain.*;
 import java.util.ArrayList;
 import java.util.List;
 
-
+/**
+ * Service that builds an overdue report for a specific user.
+ *
+ * The report contains the list of overdue loans for the user, the total fine
+ * amount for those overdue loans, and counts of overdue books and CDs.
+ */
 public class OverdueReportService {
 
     /** Fine calculator used to compute fines for individual loans. */
@@ -16,7 +21,7 @@ public class OverdueReportService {
      * Builds an overdue report for the given user.
      *
      * @param user the user for whom the report is generated
-     * @return an {@link OverdueReport} containing:
+     * @return an {@link OverdueReport} containing overdue loans, total fine and counts
      */
     public OverdueReport generateReport(User user) {
 
@@ -29,6 +34,7 @@ public class OverdueReportService {
 
         for (Loan loan : userLoans) {
 
+            // skip returned or non-overdue loans
             if (loan.isReturned() || !loan.isOverdue())
                 continue;
 

@@ -2,6 +2,9 @@ package library_system.domain;
 
 import com.fasterxml.jackson.annotation.*;
 
+/**
+ * Base class for media items stored in the library (Book, CD).
+ */
 @JsonTypeInfo(
         use = JsonTypeInfo.Id.NAME,
         property = "mediaType",
@@ -15,15 +18,18 @@ public abstract class Media {
 
     protected String id;
     protected String title;
-    protected boolean borrowed;
 
-    // هذا الحقل ضروري جدًا عشان Jackson يحفظ ويحمل الـ borrowDuration
+    /** Number of days the item may be borrowed. */
     @JsonProperty("borrowDuration")
     protected int borrowDuration;
 
+    /** Available quantity for this media item. */
+    @JsonProperty("quantity")
+    protected int quantity = 1;
+
     protected Media() {
         this.id = java.util.UUID.randomUUID().toString();
-        this.borrowed = false;
+        this.quantity = 1;
     }
 
     protected Media(String title) {
@@ -31,24 +37,32 @@ public abstract class Media {
         this.title = title;
     }
 
-    // ====== Getters & Setters ======
-
+    /**
+     * ID is not persisted to JSON per requirements.
+     */
+    @JsonIgnore
     public String getId() { return id; }
+
     public void setId(String id) { this.id = id; }
 
     public String getTitle() { return title; }
+
     public void setTitle(String title) { this.title = title; }
 
-    public boolean isBorrowed() { return borrowed; }
-    public void setBorrowed(boolean borrowed) { this.borrowed = borrowed; }
-
-    // مهم جدًا: Jackson يستخدمه لحفظ وقراءة الـ borrowDuration من الـ JSON
     public int getBorrowDuration() {
         return borrowDuration;
     }
 
     public void setBorrowDuration(int borrowDuration) {
         this.borrowDuration = borrowDuration;
+    }
+
+    public int getQuantity() {
+        return quantity;
+    }
+
+    public void setQuantity(int quantity) {
+        this.quantity = Math.max(0, quantity);
     }
 
     @JsonProperty("mediaType")
@@ -59,16 +73,14 @@ public abstract class Media {
 
     @JsonProperty("mediaType")
     public void setMediaType(String mediaType) {
-        // لا نحتاج نعمل شيء هنا، Jackson يستخدمه للـ deserialization فقط
+        // no-op for Jackson visibility
     }
 
-    // هذه الدالتين يجب أن تُعرّف في Book و CD
     public abstract FineStrategy getFineStrategy();
 
     @Override
     public String toString() {
-        return title + " (ID: " + id + ") - " +
-                (borrowed ? "معار" : "متوفر") +
-                " | مدة الإعارة: " + borrowDuration + " يوم";
+        String avail = (quantity > 0) ? ("Available (Qty: " + quantity + ")") : "Not Available (Qty: 0)";
+        return title + " - " + avail + " | Borrow days: " + borrowDuration;
     }
 }

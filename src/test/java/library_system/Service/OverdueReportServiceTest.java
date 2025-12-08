@@ -33,10 +33,10 @@ public class OverdueReportServiceTest {
     @Test
     void testGenerateOverdueReport() {
         Loan loan1 = new Loan(user, book);
-        loan1.setDueDate(LocalDate.now().minusDays(2)); // متأخر يومين
+        loan1.setDueDate(LocalDate.now().minusDays(2)); // overdue by 2 days
 
         Loan loan2 = new Loan(user, cd);
-        loan2.setDueDate(LocalDate.now().minusDays(3)); // متأخر 3 أيام
+        loan2.setDueDate(LocalDate.now().minusDays(3)); // overdue by 3 days
 
         LoanRepository.addLoan(loan1);
         LoanRepository.addLoan(loan2);

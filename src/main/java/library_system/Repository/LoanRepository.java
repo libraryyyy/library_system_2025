@@ -9,6 +9,7 @@ import library_system.domain.Loan;
 import library_system.domain.User;
 
 import java.io.File;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -24,17 +25,16 @@ public class LoanRepository {
     private static final File FILE = FileUtil.getDataFile(FILE_NAME);
 
     /**
-     * Loads all loans from JSON file.
+     * Loads all loans from JSON file and repairs/cleans the file to contain only
+     * the required fields for both user and item.
      */
     public static void loadFromFile() {
         try {
-            // إذا الملف غير موجود أو طوله 0 ← ننشئ واحد فارغ ثم نرجع
             if (!FILE.exists() || FILE.length() == 0) {
                 saveToFile();
                 return;
             }
 
-            // اقرأ الشجرة الخام أولاً — لنستطيع "إصلاح" حقول mediaType المفقودة داخل item
             JsonNode root = mapper.readTree(FILE);
             ArrayNode array;
             if (root == null || root.isNull()) {
@@ -46,54 +46,125 @@ public class LoanRepository {
                 array.add(root);
             }
 
-            boolean fixed = false;
-            for (int i = 0; i < array.size(); i++) {
-                JsonNode loanNode = array.get(i);
-                if (loanNode != null && loanNode.isObject()) {
-                    ObjectNode loanObj = (ObjectNode) loanNode;
-                    JsonNode itemNode = loanObj.get("item");
-                    if (itemNode != null && itemNode.isObject()) {
-                        ObjectNode itemObj = (ObjectNode) itemNode;
-                        // إذا mediaType مفقود أو فارغ نحاول استنتاجه
-                        if (!itemObj.has("mediaType") || itemObj.get("mediaType").isNull() || itemObj.get("mediaType").asText().isEmpty()) {
-                            if (itemObj.has("isbn") || itemObj.has("author")) {
-                                itemObj.put("mediaType", "BOOK");
-                                fixed = true;
-                            } else if (itemObj.has("artist")) {
-                                itemObj.put("mediaType", "CD");
-                                fixed = true;
-                            }
-                        }
-                    }
+            boolean changed = false;
+            ArrayNode cleaned = mapper.createArrayNode();
+
+            for (JsonNode loanNode : array) {
+                if (loanNode == null || !loanNode.isObject()) continue;
+                ObjectNode loanObj = (ObjectNode) loanNode;
+
+                // Build cleaned loan node
+                ObjectNode cleanLoan = mapper.createObjectNode();
+
+                // user: only username,password,email,fineBalance
+                JsonNode userNode = loanObj.get("user");
+                ObjectNode cleanUser = mapper.createObjectNode();
+                if (userNode != null && userNode.isObject()) {
+                    if (userNode.has("username")) cleanUser.put("username", userNode.get("username").asText());
+                    if (userNode.has("password")) cleanUser.put("password", userNode.get("password").asText());
+                    if (userNode.has("email")) cleanUser.put("email", userNode.get("email").asText());
+                    if (userNode.has("fineBalance")) cleanUser.put("fineBalance", userNode.get("fineBalance").asDouble());
                 }
+                cleanLoan.set("user", cleanUser);
+
+                // item: minimal fields depending on mediaType
+                JsonNode itemNode = loanObj.get("item");
+                ObjectNode cleanItem = mapper.createObjectNode();
+                String mediaType = null;
+                if (itemNode != null && itemNode.isObject()) {
+                    if (itemNode.has("mediaType")) mediaType = itemNode.get("mediaType").asText();
+                    // If mediaType missing, try to infer
+                    if (mediaType == null || mediaType.isEmpty()) {
+                        if (itemNode.has("isbn") || itemNode.has("author")) mediaType = "BOOK";
+                        else if (itemNode.has("artist")) mediaType = "CD";
+                    }
+                    if (mediaType != null) cleanItem.put("mediaType", mediaType);
+                    if (itemNode.has("title")) cleanItem.put("title", itemNode.get("title").asText());
+                    if ("BOOK".equalsIgnoreCase(mediaType)) {
+                        if (itemNode.has("author")) cleanItem.put("author", itemNode.get("author").asText());
+                        if (itemNode.has("isbn")) cleanItem.put("isbn", itemNode.get("isbn").asText());
+                    } else if ("CD".equalsIgnoreCase(mediaType)) {
+                        if (itemNode.has("artist")) cleanItem.put("artist", itemNode.get("artist").asText());
+                    }
+                    if (itemNode.has("quantity")) cleanItem.put("quantity", itemNode.get("quantity").asInt(1));
+                    else cleanItem.put("quantity", 1);
+                    if (itemNode.has("borrowDuration")) cleanItem.put("borrowDuration", itemNode.get("borrowDuration").asInt());
+                }
+                cleanLoan.set("item", cleanItem);
+
+                // Copy borrowedDate, dueDate, returned fields if present
+                if (loanObj.has("borrowedDate")) cleanLoan.set("borrowedDate", loanObj.get("borrowedDate"));
+                if (loanObj.has("dueDate")) cleanLoan.set("dueDate", loanObj.get("dueDate"));
+                if (loanObj.has("returned")) cleanLoan.set("returned", loanObj.get("returned"));
+                else cleanLoan.put("returned", false);
+
+                cleaned.add(cleanLoan);
+                // if original differs from cleaned, mark changed
+                if (!loanObj.equals(cleanLoan)) changed = true;
             }
 
-            // إذا أصلحنا الشجرة — أعد الكتابة للملف (pretty) لتصحيح البيانات
-            if (fixed) {
-                mapper.writerWithDefaultPrettyPrinter().writeValue(FILE, array);
+            if (changed) {
+                mapper.writerWithDefaultPrettyPrinter().writeValue(FILE, cleaned);
             }
 
-            // الآن اقرأ كقائمة Loan بشكل صريح (هذا يضمن أن Jackson يقوم بالـ deserialization الصحيح)
-            List<Loan> loaded = mapper.readValue(FILE, mapper.getTypeFactory().constructCollectionType(List.class, Loan.class));
+            // Now deserialize cleaned file into Loan objects
+            List<Loan> loaded = mapper.readValue(FILE, new TypeReference<List<Loan>>() {});
             loans.clear();
             loans.addAll(loaded);
 
         } catch (Exception e) {
             System.err.println("Error loading loans.json: " + e.getMessage());
-            // حافظ على قائمة فارغة عند حدوث خطأ
             loans.clear();
         }
     }
 
     /**
-     * Saves all loans to JSON file.
+     * Saves all loans to JSON file using a cleaned representation (no ids, no borrowed field).
      */
     public static void saveToFile() {
         try {
-            FileUtil.writeAtomic(FILE, loans, mapper);
+            ArrayNode arr = mapper.createArrayNode();
+            for (Loan l : loans) {
+                ObjectNode loanObj = mapper.createObjectNode();
+                // user minimal
+                ObjectNode userNode = mapper.createObjectNode();
+                User u = l.getUser();
+                if (u != null) {
+                    userNode.put("username", u.getUsername());
+                    userNode.put("password", u.getPassword());
+                    userNode.put("email", u.getEmail());
+                    userNode.put("fineBalance", u.getFineBalance());
+                }
+                loanObj.set("user", userNode);
+                // item minimal
+                ObjectNode itemNode = mapper.createObjectNode();
+                library_system.domain.Media m = l.getItem();
+                if (m != null) {
+                    String mt = m.getMediaType();
+                    if (mt != null) itemNode.put("mediaType", mt);
+                    itemNode.put("title", m.getTitle());
+                    if (m instanceof library_system.domain.Book) {
+                        library_system.domain.Book bk = (library_system.domain.Book) m;
+                        itemNode.put("author", bk.getAuthor());
+                        if (bk.getIsbn() != null) itemNode.put("isbn", bk.getIsbn());
+                    } else if (m instanceof library_system.domain.CD) {
+                        library_system.domain.CD cd = (library_system.domain.CD) m;
+                        itemNode.put("artist", cd.getArtist());
+                    }
+                    itemNode.put("quantity", m.getQuantity());
+                    itemNode.put("borrowDuration", m.getBorrowDuration());
+                }
+                loanObj.set("item", itemNode);
 
+                if (l.getBorrowedDate() != null) loanObj.put("borrowedDate", l.getBorrowedDate().toString());
+                if (l.getDueDate() != null) loanObj.put("dueDate", l.getDueDate().toString());
+                loanObj.put("returned", l.isReturned());
+
+                arr.add(loanObj);
+            }
+            mapper.writerWithDefaultPrettyPrinter().writeValue(FILE, arr);
         } catch (Exception e) {
-            System.err.println("Error saving loans.json");
+            System.err.println("Error saving loans.json: " + e.getMessage());
         }
     }
 
@@ -105,6 +176,18 @@ public class LoanRepository {
     public static void addLoan(Loan loan) {
         loans.add(loan);
         saveToFile();
+    }
+
+    /**
+     * Checks if a user already has an active (not returned) loan for the given media item.
+     * Matching: books by ISBN if present otherwise title; CDs by title+artist.
+     *
+     * @param user the user
+     * @param item the media item
+     * @return true if user has an active loan for this item
+     */
+    public static boolean userHasActiveLoanForItem(User user, library_system.domain.Media item) {
+        return findActiveLoan(user, item) != null;
     }
 
     /**

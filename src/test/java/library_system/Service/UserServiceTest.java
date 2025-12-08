@@ -22,7 +22,7 @@ class UserServiceTest {
         LoanRepository.clear();
         userService = new UserService();
 
-        // ✅ أضفنا البريد الإلكتروني
+        // Added test email address
         user = new User("testUser", "pass", "testUser@example.com");
         UserRepository.addUser(user);
 
