@@ -31,7 +31,14 @@ public class UserRepository {
         try {
             List<User> loaded = FileUtil.readList(FILE, new TypeReference<List<User>>() {}, mapper);
             users.clear();
-            users.addAll(loaded);
+            if (loaded != null) {
+                for (User u : loaded) {
+                    if (u.getEmail() != null) {
+                        u.setEmail(sanitizeEmail(u.getEmail()));
+                    }
+                    users.add(u);
+                }
+            }
         } catch (Exception e) {
             users = new ArrayList<>();
             System.err.println("Error loading users.json: " + e.getMessage());
@@ -43,6 +50,12 @@ public class UserRepository {
      */
     public static void saveToFile() {
         try {
+            // sanitize emails before saving
+            for (User u : users) {
+                if (u.getEmail() != null) {
+                    u.setEmail(sanitizeEmail(u.getEmail()));
+                }
+            }
             FileUtil.writeAtomic(FILE, users, mapper);
         } catch (Exception e) {
             System.err.println("Failed to save users.json: " + e.getMessage());
@@ -55,6 +68,9 @@ public class UserRepository {
      * @param user user to add
      */
     public static void addUser(User user) {
+        if (user.getEmail() != null) {
+            user.setEmail(sanitizeEmail(user.getEmail()));
+        }
         users.add(user);
         saveToFile();
     }
@@ -81,8 +97,9 @@ public class UserRepository {
      */
     public static User findUserByEmail(String email) {
         if (email == null) return null;
+        String s = sanitizeEmail(email);
         return users.stream()
-                .filter(u -> u.getEmail().equalsIgnoreCase(email))
+                .filter(u -> u.getEmail() != null && u.getEmail().equalsIgnoreCase(s))
                 .findFirst()
                 .orElse(null);
     }
@@ -136,8 +153,16 @@ public class UserRepository {
     public static void updateUser(User user) {
         // Ensure parameter is used to avoid unused-parameter warnings
         if (user == null) return;
+        if (user.getEmail() != null) user.setEmail(sanitizeEmail(user.getEmail()));
         // In-memory user objects are the same instances returned by the repo,
         // so just saving is sufficient to persist the change.
         saveToFile();
+    }
+
+    private static String sanitizeEmail(String email) {
+        if (email == null) return null;
+        String s = email.trim();
+        s = s.replaceAll("\\s+", "");
+        return s;
     }
 }
