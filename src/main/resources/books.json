@@ -3,13 +3,34 @@
   "title" : "Harry Potter and the Sorcerer's Stone",
   "author" : "J.K. Rowling",
   "isbn" : "01",
-  "quantity" : 4,
-  "borrowDuration" : -1
+  "quantity" : 2,
+  "borrowDuration" : 14
 }, {
   "mediaType" : "BOOK",
-  "title" : "ss",
-  "author" : "ssss",
-  "isbn" : "01",
-  "quantity" : 4,
-  "borrowDuration" : -1
+  "title" : "Harry Potter and the Chamber of Secrets",
+  "author" : "J.K. Rowling",
+  "isbn" : "02",
+  "quantity" : 3,
+  "borrowDuration" : 14
+}, {
+  "mediaType" : "BOOK",
+  "title" : "The Little Prince",
+  "author" : "Antoine de Saint-Exupéry",
+  "isbn" : "03",
+  "quantity" : 3,
+  "borrowDuration" : 14
+}, {
+  "mediaType" : "BOOK",
+  "title" : "The Hobbit",
+  "author" : "J.R.R. Tolkien",
+  "isbn" : "04",
+  "quantity" : 2,
+  "borrowDuration" : 14
+}, {
+  "mediaType" : "BOOK",
+  "title" : "Atomic Habits",
+  "author" : "James Clear",
+  "isbn" : "05",
+  "quantity" : 6,
+  "borrowDuration" : 14
 } ]

@@ -62,7 +62,7 @@ public class LoanRepository {
                 if (userNode != null && userNode.isObject()) {
                     if (userNode.has("username")) cleanUser.put("username", userNode.get("username").asText());
                     if (userNode.has("password")) cleanUser.put("password", userNode.get("password").asText());
-                    if (userNode.has("email")) cleanUser.put("email", userNode.get("email").asText());
+                    if (userNode.has("email")) cleanUser.put("email", sanitizeEmail(userNode.get("email").asText()));
                     if (userNode.has("fineBalance")) cleanUser.put("fineBalance", userNode.get("fineBalance").asDouble());
                 }
                 cleanLoan.set("user", cleanUser);
@@ -110,7 +110,14 @@ public class LoanRepository {
             // Now deserialize cleaned file into Loan objects
             List<Loan> loaded = mapper.readValue(FILE, new TypeReference<List<Loan>>() {});
             loans.clear();
-            loans.addAll(loaded);
+            if (loaded != null) {
+                for (Loan l : loaded) {
+                    if (l.getUser() != null && l.getUser().getEmail() != null) {
+                        l.getUser().setEmail(sanitizeEmail(l.getUser().getEmail()));
+                    }
+                    loans.add(l);
+                }
+            }
 
         } catch (Exception e) {
             System.err.println("Error loading loans.json: " + e.getMessage());
@@ -132,7 +139,8 @@ public class LoanRepository {
                 if (u != null) {
                     userNode.put("username", u.getUsername());
                     userNode.put("password", u.getPassword());
-                    userNode.put("email", u.getEmail());
+                    if (u.getEmail() != null) userNode.put("email", sanitizeEmail(u.getEmail()));
+                    else userNode.put("email", (String) null);
                     userNode.put("fineBalance", u.getFineBalance());
                 }
                 loanObj.set("user", userNode);
@@ -330,5 +338,16 @@ public class LoanRepository {
                 return;
             }
         }
+    }
+
+    /**
+     * Sanitizes the email address by trimming whitespace and converting to lowercase.
+     *
+     * @param email the original email
+     * @return sanitized email
+     */
+    private static String sanitizeEmail(String email) {
+        if (email == null) return null;
+        return email.trim().toLowerCase();
     }
 }

@@ -33,17 +33,16 @@ public class Main {
         CDRepository.loadFromFile();
         LoanRepository.loadFromFile();
 
-        try {
-            reminderService.addObserver(new EmailNotifier(
-                    "saraabdaldayem1969@gmail.com",
-                    "oylkqfgwngrcunf"   // optional app password
-            ));
+        // Initialize notification channel: prefer real email notifier if configured
+        EmailNotifier emailNotifier = new EmailNotifier();
+        if (emailNotifier.isConfigured()) {
+            reminderService.addObserver(emailNotifier);
             System.out.println("Email notifier configured.");
-        } catch (Exception e) {
-            System.out.println("Real email notifier unavailable; using console notifier.");
+        } else {
+            System.out.println("Email notifier not configured; using console notifier.");
             reminderService.addObserver((user, message) -> {
                 System.out.println("--- Notification (console) ---");
-                System.out.println("To: " + user.getEmail());
+                System.out.println("To: " + (user != null ? user.getEmail() : "unknown"));
                 System.out.println("Message: " + message);
                 System.out.println("------------------------------");
             });

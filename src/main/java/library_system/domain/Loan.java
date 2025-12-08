@@ -49,6 +49,8 @@ public class Loan {
         this.item = item;
         this.borrowedDate = LocalDate.now();
         this.dueDate = borrowedDate.plusDays(item.getBorrowDuration());
+      // this.dueDate = borrowedDate.minusDays(1);
+
         this.returned = false;
     }
 

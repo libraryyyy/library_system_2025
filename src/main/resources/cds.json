@@ -2,6 +2,30 @@
   "mediaType" : "CD",
   "title" : "Fearless",
   "artist" : "Taylor Swift",
-  "quantity" : 1,
+  "quantity" : 4,
+  "borrowDuration" : 7
+}, {
+  "mediaType" : "CD",
+  "title" : "Random Access Memories",
+  "artist" : "Daft Punk",
+  "quantity" : 2,
+  "borrowDuration" : 7
+}, {
+  "mediaType" : "CD",
+  "title" : "Thriller",
+  "artist" : "Michael Jackson",
+  "quantity" : 3,
+  "borrowDuration" : 7
+}, {
+  "mediaType" : "CD",
+  "title" : "25",
+  "artist" : "Adele",
+  "quantity" : 5,
+  "borrowDuration" : 7
+}, {
+  "mediaType" : "CD",
+  "title" : "Divide",
+  "artist" : "Ed Sheeran",
+  "quantity" : 4,
   "borrowDuration" : 7
 } ]

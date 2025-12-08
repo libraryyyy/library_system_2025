@@ -35,16 +35,13 @@ public class BorrowService {
     private boolean borrowMedia(User user, Media media) {
         if (user == null || media == null) return false;
 
-        if (user.getFineBalance() > 0) {
-            System.out.println("You cannot borrow: outstanding fines: " + user.getFineBalance());
-            return false;
-        }
+        // Rule: if user has overdue loans -> stop immediately with exact message
         if (LoanRepository.hasOverdueLoans(user)) {
             System.out.println("You cannot borrow: you have overdue items.");
             return false;
         }
 
-        // Find repository-held instance to update quantity
+        // Locate the repository-held instance (do not create new detached objects)
         Media repoItem = media;
         if (media instanceof Book) {
             Book wanted = (Book) media;
@@ -53,8 +50,8 @@ public class BorrowService {
                     repoItem = b;
                     break;
                 }
-                if (wanted.getTitle() != null && b.getTitle() != null && wanted.getTitle().equalsIgnoreCase(b.getTitle())
-                        && wanted.getAuthor() != null && b.getAuthor() != null && wanted.getAuthor().equalsIgnoreCase(b.getAuthor())) {
+                if (wanted.getTitle() != null && b.getTitle() != null && b.getTitle().equalsIgnoreCase(wanted.getTitle())
+                        && wanted.getAuthor() != null && b.getAuthor() != null && b.getAuthor().equalsIgnoreCase(wanted.getAuthor())) {
                     repoItem = b;
                     break;
                 }
@@ -62,27 +59,27 @@ public class BorrowService {
         } else if (media instanceof CD) {
             CD wanted = (CD) media;
             for (CD c : CDRepository.getAll()) {
-                if (wanted.getTitle() != null && c.getTitle() != null && wanted.getTitle().equalsIgnoreCase(c.getTitle())
-                        && ((wanted.getArtist() == null && c.getArtist() == null) || (wanted.getArtist() != null && c.getArtist() != null && wanted.getArtist().equalsIgnoreCase(c.getArtist())))) {
+                if (wanted.getTitle() != null && c.getTitle() != null && c.getTitle().equalsIgnoreCase(wanted.getTitle())
+                        && ((wanted.getArtist() == null && c.getArtist() == null) || (wanted.getArtist() != null && c.getArtist() != null && c.getArtist().equalsIgnoreCase(wanted.getArtist())))) {
                     repoItem = c;
                     break;
                 }
             }
         }
 
-        // Use quantity as source of truth
-        if (repoItem.getQuantity() <= 0) {
-            System.out.println("Item unavailable. Quantity is zero.");
-            return false;
-        }
-
-        // Prevent duplicate active loan
+        // Rule: if user already has an active loan for this item -> stop with exact message
         if (LoanRepository.userHasActiveLoanForItem(user, repoItem)) {
-            System.out.println("You already borrowed this item. Please return it first.");
+            System.out.println("You already borrowed this item and have not returned it yet.");
             return false;
         }
 
-        // Decrease quantity and persist
+        // Rule: if out of stock -> stop with exact message
+        if (repoItem.getQuantity() <= 0) {
+            System.out.println("This item is out of stock.");
+            return false;
+        }
+
+        // All checks passed -> perform borrow
         repoItem.setQuantity(repoItem.getQuantity() - 1);
 
         if (repoItem instanceof Book) BookRepository.saveToFile();

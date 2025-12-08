@@ -5,52 +5,101 @@ import jakarta.mail.*;
 import jakarta.mail.internet.*;
 
 import java.util.Properties;
+import java.util.regex.Pattern;
 
+/**
+ * Email notifier which sends notifications to users using Gmail SMTP.
+ *
+ * Credentials are read from environment variables via System.getenv(). This class
+ * handles missing credentials and SMTP/authentication errors and prints clear
+ * status messages without throwing exceptions to the caller.
+ */
 public class EmailNotifier implements Observer {
 
     private final String senderEmail;
     private final String senderPassword;
+    private final Session session;
+    private final boolean configured;
+    private static final Pattern SIMPLE_EMAIL_REGEX = Pattern.compile("^[A-Za-z0-9+_.-]+@(.+)$");
 
-    public EmailNotifier(String senderEmail, String senderPassword) {
-        this.senderEmail = senderEmail;
-        this.senderPassword = senderPassword;
+    /**
+     * Initializes email notifier using environment variables EMAIL_USERNAME and EMAIL_PASSWORD.
+     */
+    public EmailNotifier() {
+        this.senderEmail = System.getenv("EMAIL_USERNAME");
+        this.senderPassword = System.getenv("EMAIL_PASSWORD");
+
+        if (senderEmail == null || senderEmail.isBlank() || senderPassword == null || senderPassword.isBlank()) {
+            System.out.println("Email notifier not configured: set EMAIL_USERNAME and EMAIL_PASSWORD as environment variables to enable email sending.");
+            this.session = null;
+            this.configured = false;
+            return;
+        }
+
+        Properties props = new Properties();
+        props.put("mail.smtp.auth", "true");
+        props.put("mail.smtp.starttls.enable", "true");
+        props.put("mail.smtp.host", "smtp.gmail.com");
+        props.put("mail.smtp.port", "587");
+
+        this.session = Session.getInstance(props, new jakarta.mail.Authenticator() {
+            @Override
+            protected PasswordAuthentication getPasswordAuthentication() {
+                return new PasswordAuthentication(senderEmail, senderPassword);
+            }
+        });
+        this.configured = true;
     }
 
     @Override
     public void notify(User user, String messageBody) {
+        if (!configured) {
+            System.out.println("Email notifier is not configured. Notification skipped for user: " + (user != null ? user.getUsername() : "unknown"));
+            return;
+        }
+
+        if (user == null || user.getEmail() == null || user.getEmail().isBlank()) {
+            System.out.println("Skipping notification: user or user email is missing.");
+            return;
+        }
+
+        String recipient = user.getEmail().trim();
+        if (!isValidEmail(recipient)) {
+            System.out.println("Skipping notification: invalid email address: " + recipient);
+            return;
+        }
 
         try {
-            Properties props = new Properties();
-            props.put("mail.smtp.auth", "true");
-            props.put("mail.smtp.starttls.enable", "true");
-            props.put("mail.smtp.host", "smtp.gmail.com");
-            props.put("mail.smtp.port", "587");
-
-            Session session = Session.getInstance(props, new jakarta.mail.Authenticator() {
-                @Override
-                protected PasswordAuthentication getPasswordAuthentication() {
-                    return new PasswordAuthentication(
-                            senderEmail,     // <-- from constructor
-                            senderPassword   // <-- App Password
-                    );
-                }
-            });
-
             Message message = new MimeMessage(session);
             message.setFrom(new InternetAddress(senderEmail));
-            message.setRecipients(
-                    Message.RecipientType.TO,
-                    InternetAddress.parse(user.getEmail()) // <-- real recipient
-            );
+            message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(recipient));
             message.setSubject("Library Notification");
-            message.setText(messageBody);
+            message.setText(messageBody == null ? "" : messageBody);
 
             Transport.send(message);
+            System.out.println("Email sent successfully to: " + recipient);
 
-            System.out.println("Email sent to: " + user.getEmail());
-
+        } catch (AuthenticationFailedException e) {
+            System.out.println("SMTP Authentication failed. Please verify EMAIL_USERNAME and EMAIL_PASSWORD environment variables (use a Gmail App Password). Error: " + e.getMessage());
+        } catch (SendFailedException e) {
+            System.out.println("Failed to send email to " + recipient + ". Address was rejected or invalid.");
+        } catch (MessagingException e) {
+            System.out.println("An error occurred while sending email to " + recipient + ": " + e.getMessage());
         } catch (Exception e) {
-            System.out.println("Failed to send email to " + user.getEmail() + ": " + e.getMessage());
+            System.out.println("Unexpected error while sending email: " + e.getMessage());
         }
+    }
+
+    private boolean isValidEmail(String email) {
+        return SIMPLE_EMAIL_REGEX.matcher(email).matches();
+    }
+
+    /**
+     * Returns true when the notifier was successfully configured with environment credentials.
+     *
+     * @return true if EMAIL_USERNAME and EMAIL_PASSWORD were provided and session created
+     */
+    public boolean isConfigured() {
+        return this.configured;
     }
 }
