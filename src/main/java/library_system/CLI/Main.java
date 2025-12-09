@@ -406,19 +406,25 @@ public class Main {
     }
 
     private static void payFine(User user) {
-        System.out.println("Fine: " + user.getFineBalance());
+        // Read the stored fine balance (persisted when the overdue report is generated)
+        double fine = user.getFineBalance();
+        System.out.println("Fine: " + fine);
         System.out.print("Enter amount: ");
 
         try {
             double amount = Double.parseDouble(scanner.nextLine());
-            if (user.payFine(amount))
-                {
-                    UserRepository.updateUser(user);
-                    System.out.println("Payment done.");
-                }
-            else
+
+            // Validate the input against the stored fine balance
+            if (amount <= 0 || amount > fine) {
                 System.out.println("Invalid amount.");
-        } catch (Exception e) {
+                return;
+            }
+
+            // Deduct the paid amount and persist the change
+            user.setFineBalance(fine - amount);
+            UserRepository.updateUser(user);
+            System.out.println("Payment successful! Remaining fine: " + user.getFineBalance());
+        } catch (NumberFormatException e) {
             System.out.println("Invalid input.");
         }
     }

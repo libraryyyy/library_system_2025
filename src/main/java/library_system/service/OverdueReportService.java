@@ -2,6 +2,7 @@ package library_system.service;
 
 import library_system.Repository.LoanRepository;
 import library_system.domain.*;
+import library_system.Repository.UserRepository;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -47,6 +48,12 @@ public class OverdueReportService {
             if (item instanceof Book) booksCount++;
             if (item instanceof CD) cdsCount++;
         }
+
+        // Persist the calculated total fine to the user's record so it is
+        // available across the application (e.g., when the user selects "Pay Fine").
+        // Use the repository to save the change immediately.
+        user.setFineBalance(totalFine);
+        UserRepository.updateUser(user);
 
         return new OverdueReport(overdueItems, totalFine, booksCount, cdsCount);
     }

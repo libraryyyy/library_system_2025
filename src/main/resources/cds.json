@@ -26,6 +26,12 @@
   "mediaType" : "CD",
   "title" : "Divide",
   "artist" : "Ed Sheeran",
-  "quantity" : 4,
+  "quantity" : 3,
   "borrowDuration" : 7
-} ]
+}, {
+  "mediaType" : "CD",
+  "title" : "The Eminem Show",
+  "artist" : "Eminem",
+  "quantity" : 5,
+  "borrowDuration" : 7
+}]

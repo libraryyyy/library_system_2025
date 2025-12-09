@@ -3,7 +3,7 @@
   "title" : "Harry Potter and the Sorcerer's Stone",
   "author" : "J.K. Rowling",
   "isbn" : "01",
-  "quantity" : 2,
+  "quantity" : 1,
   "borrowDuration" : 14
 }, {
   "mediaType" : "BOOK",
@@ -32,5 +32,19 @@
   "author" : "James Clear",
   "isbn" : "05",
   "quantity" : 6,
+  "borrowDuration" : 14
+}, {
+  "mediaType" : "BOOK",
+  "title" : "Hero on a Bicycle",
+  "author" : "Shirley Hughes",
+  "isbn" : "06",
+  "quantity" : 9,
+  "borrowDuration" : 14
+}, {
+  "mediaType" : "BOOK",
+  "title" : "The Circular Staircase",
+  "author" : "Mary Roberts Rinehart",
+  "isbn" : "06",
+  "quantity" : 5,
   "borrowDuration" : 14
 } ]
