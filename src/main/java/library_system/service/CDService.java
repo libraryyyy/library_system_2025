@@ -19,6 +19,19 @@ public class CDService {
     public void addCD(CD cd) {
 
         if (cd == null) return;
+
+        // Validate required fields
+        if (cd.getTitle() == null || cd.getTitle().isBlank() || cd.getArtist() == null || cd.getArtist().isBlank()) {
+            System.out.println("Error: CD title and artist are required and must not be blank.");
+            return;
+        }
+
+        // Uniqueness check: title must be unique
+        if (CDRepository.existsByTitle(cd.getTitle())) {
+            System.out.println("A CD with this title already exists.");
+            return;
+        }
+
         CDRepository.addCD(cd);
     }
 
@@ -30,6 +43,26 @@ public class CDService {
      */
     public List<CD> search(String keyword) {
         return CDRepository.search(keyword);
+    }
+
+    /**
+     * Search CDs by title only (does not match artist).
+     *
+     * @param title substring to search in title
+     * @return matching CDs
+     */
+    public List<CD> searchByTitle(String title) {
+        return CDRepository.findByTitleContaining(title);
+    }
+
+    /**
+     * Search CDs by artist only (does not match title).
+     *
+     * @param artist substring to search in artist
+     * @return matching CDs
+     */
+    public List<CD> searchByArtist(String artist) {
+        return CDRepository.findByArtistContaining(artist);
     }
 
     /**

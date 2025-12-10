@@ -36,7 +36,8 @@ public class Book extends Media {
 
     @Override
     public int getBorrowDuration() {
-        return 14;
+        // Books are borrowed for 28 days (become overdue starting day 29)
+        return 28;
     }
 
     @Override

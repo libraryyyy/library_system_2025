@@ -208,4 +208,36 @@ public class BookRepository {
         for (Book b : books) if (b.getIsbn() != null && b.getIsbn().toLowerCase().contains(lower)) res.add(b);
         return res;
     }
+
+    /**
+     * Check existence by exact title (case-insensitive, trimmed).
+     * Used to enforce uniqueness when adding books.
+     *
+     * @param title title to check
+     * @return true if a book with the same title exists
+     */
+    public static boolean existsByTitle(String title) {
+        if (title == null) return false;
+        String t = title.trim().toLowerCase();
+        for (Book b : books) {
+            if (b.getTitle() != null && b.getTitle().trim().toLowerCase().equals(t)) return true;
+        }
+        return false;
+    }
+
+    /**
+     * Check existence by exact ISBN (case-insensitive, trimmed).
+     * Used to enforce uniqueness when adding books.
+     *
+     * @param isbn isbn to check
+     * @return true if a book with the same isbn exists
+     */
+    public static boolean existsByIsbn(String isbn) {
+        if (isbn == null) return false;
+        String s = isbn.trim().toLowerCase();
+        for (Book b : books) {
+            if (b.getIsbn() != null && b.getIsbn().trim().toLowerCase().equals(s)) return true;
+        }
+        return false;
+    }
 }

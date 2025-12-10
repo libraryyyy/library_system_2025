@@ -173,6 +173,22 @@ public class CDRepository {
     }
 
     /**
+     * Check existence by exact title (case-insensitive, trimmed).
+     * Used to enforce uniqueness when adding CDs.
+     *
+     * @param title title to check
+     * @return true if a CD with the same title exists
+     */
+    public static boolean existsByTitle(String title) {
+        if (title == null) return false;
+        String t = title.trim().toLowerCase();
+        for (CD c : cds) {
+            if (c.getTitle() != null && c.getTitle().trim().toLowerCase().equals(t)) return true;
+        }
+        return false;
+    }
+
+    /**
      * Finds a CD by id.
      *
      * @param id id

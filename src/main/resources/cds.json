@@ -2,7 +2,7 @@
   "mediaType" : "CD",
   "title" : "Fearless",
   "artist" : "Taylor Swift",
-  "quantity" : 4,
+  "quantity" : 2,
   "borrowDuration" : 7
 }, {
   "mediaType" : "CD",
@@ -32,6 +32,12 @@
   "mediaType" : "CD",
   "title" : "The Eminem Show",
   "artist" : "Eminem",
-  "quantity" : 5,
+  "quantity" : 4,
   "borrowDuration" : 7
-}]
+}, {
+  "mediaType" : "CD",
+  "title" : "House of Freaks",
+  "artist" : "Tantilla",
+  "quantity" : 0,
+  "borrowDuration" : 7
+} ]

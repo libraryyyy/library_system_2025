@@ -69,22 +69,43 @@ public class ReminderService {
             if (user == null) continue;
 
             List<Loan> loans = e.getValue();
-            long bookCount = loans.stream().filter(l -> l.getItem() instanceof Book).count();
-            long cdCount = loans.stream().filter(l -> l.getItem() instanceof CD).count();
 
-            String message;
-            if (bookCount > 0 && cdCount > 0) {
-                message = "You have " + bookCount + " overdue book(s) and " + cdCount + " overdue CD(s).";
-            } else if (bookCount > 0) {
-                message = "You have " + bookCount + " overdue book(s).";
+            // Build a detailed message including per-item lines with media type, title, overdue days and fine
+            StringBuilder sb = new StringBuilder();
+            sb.append("--- Overdue Reminder ---\n");
+            sb.append("You have the following overdue items:\n\n");
+
+            int totalFine = 0;
+            for (Loan loan : loans) {
+                String mediaType = loan.getItem() != null ? loan.getItem().getMediaType() : "Unknown";
+                String title = loan.getItem() != null ? loan.getItem().getTitle() : "<unknown>";
+                int days = loan.getOverdueDays();
+                // Respect per-loan payment state: if the loan's fine has already been paid,
+                // do not report a fine amount in the reminder.
+                if (loan.isFinePaid()) {
+                    sb.append(mediaType).append(" - ").append(title)
+                            .append(" | Days overdue: ").append(days)
+                            .append(" | Fine: ").append("PAID").append("\n");
+                } else {
+                    // prefer a recorded fineAmount (e.g., charged on return) when present
+                    int fineAmount = loan.getFineAmount() > 0 ? loan.getFineAmount() : loan.calculateFine();
+                    totalFine += fineAmount;
+                    sb.append(mediaType).append(" - ").append(title)
+                            .append(" | Days overdue: ").append(days)
+                            .append(" | Fine: ").append(fineAmount).append(" NIS\n");
+                }
+            }
+            // Only show total fine if there is an outstanding unpaid amount
+            if (totalFine > 0) {
+                sb.append("\nTotal fine: ").append(totalFine).append(" NIS\n");
             } else {
-                message = "You have " + cdCount + " overdue CD(s).";
+                sb.append("\nNo outstanding unpaid fines. Please return the overdue items when possible.\n");
             }
 
             boolean userNotified = false;
             for (Observer observer : observers) {
                 try {
-                    observer.notify(user, message);
+                    observer.notify(user, sb.toString());
                     userNotified = true;
                 } catch (Exception ex) {
                     System.err.println("Failed to notify user " + username + ": " + ex.getMessage());

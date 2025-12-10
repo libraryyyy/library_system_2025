@@ -108,8 +108,6 @@ public class BorrowService {
             return false;
         }
 
-        // Update loan and repo item
-        loan.markReturned();
         Media repoItem = loan.getItem();
         if (repoItem == null) return false;
 
@@ -119,13 +117,16 @@ public class BorrowService {
         if (repoItem instanceof Book) BookRepository.saveToFile();
         if (repoItem instanceof CD) CDRepository.saveToFile();
 
-        LoanRepository.markLoanReturned(loan);
+        // Persist loan return via repository which will find and update the active loan
         int fine = loan.calculateFine();
+        // Use the repository overloaded method to mark returned and record fine atomically
         if (fine > 0) {
+            LoanRepository.markLoanReturned(loan, fine);
             user.addFine(fine);
             library_system.Repository.UserRepository.updateUser(user);
             System.out.println("Return completed with fine: " + fine + " NIS");
         } else {
+            LoanRepository.markLoanReturned(loan);
             System.out.println("Return successful.");
         }
 

@@ -35,25 +35,27 @@ public class OverdueReportService {
 
         for (Loan loan : userLoans) {
 
-            // skip returned or non-overdue loans
-            if (loan.isReturned() || !loan.isOverdue())
-                continue;
+            // Consider loans that have unpaid fines:
+            // - currently overdue and fine not paid
+            // - OR already returned but a fine amount was recorded and not paid
+            if (loan.isFinePaid()) continue;
+            boolean hasOutstanding = loan.isOverdue() || (loan.isReturned() && loan.getFineAmount() > 0);
+            if (!hasOutstanding) continue;
 
             overdueItems.add(loan);
 
             int fine = fineCalculator.calculateFine(loan);
-            totalFine += fine;
+            // If the loan already has a recorded fineAmount (e.g., on return), prefer that value
+            if (loan.getFineAmount() > 0) fine = loan.getFineAmount();
+             totalFine += fine;
 
             Media item = loan.getItem();
             if (item instanceof Book) booksCount++;
             if (item instanceof CD) cdsCount++;
         }
 
-        // Persist the calculated total fine to the user's record so it is
-        // available across the application (e.g., when the user selects "Pay Fine").
-        // Use the repository to save the change immediately.
-        user.setFineBalance(totalFine);
-        UserRepository.updateUser(user);
+        // The overdue report should not overwrite the user's persistent fineBalance
+        // which reflects payments. It only displays unpaid outstanding fines.
 
         return new OverdueReport(overdueItems, totalFine, booksCount, cdsCount);
     }

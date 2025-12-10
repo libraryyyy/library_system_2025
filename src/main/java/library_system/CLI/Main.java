@@ -153,6 +153,18 @@ public class Main {
         } else {
             try { qty = Math.max(0, Integer.parseInt(q)); } catch (NumberFormatException e) { System.out.println("Invalid quantity, using 1."); qty = 1; }
         }
+        // Validate required fields: title, author, isbn must not be blank
+        if (title == null || title.isBlank() || author == null || author.isBlank() || isbn == null || isbn.isBlank()) {
+            System.out.println("Error: title, author and ISBN are required and must not be blank.");
+            return;
+        }
+
+        // Enforce uniqueness: title and ISBN must be unique among books
+        if (BookRepository.existsByTitle(title) || BookRepository.existsByIsbn(isbn)) {
+            System.out.println("A book with this title or ISBN already exists.");
+            return;
+        }
+
         Book b = new Book(title, author, isbn);
         b.setQuantity(qty);
         BookRepository.addBook(b);
@@ -172,6 +184,18 @@ public class Main {
         } else {
             try { qty = Math.max(0, Integer.parseInt(q)); } catch (NumberFormatException e) { System.out.println("Invalid quantity, using 1."); qty = 1; }
         }
+        // Validate required fields: title and artist must not be blank
+        if (title == null || title.isBlank() || artist == null || artist.isBlank()) {
+            System.out.println("Error: CD title and artist are required and must not be blank.");
+            return;
+        }
+
+        // Enforce uniqueness: CD title must be unique
+        if (CDRepository.existsByTitle(title)) {
+            System.out.println("A CD with this title already exists.");
+            return;
+        }
+
         CD c = new CD(title, artist);
         c.setQuantity(qty);
         CDRepository.addCD(c);
@@ -210,7 +234,8 @@ public class Main {
     private static void editCDQuantity() {
         System.out.print("Enter part of CD title to find: ");
         String q = scanner.nextLine();
-        List<CD> results = cdService.search(q);
+        // Search by title only (do not match artist)
+        List<CD> results = cdService.searchByTitle(q);
         if (results.isEmpty()) { System.out.println("No matching items found."); return; }
         System.out.println("Found:");
         for (int i=0;i<results.size();i++) {
@@ -275,83 +300,25 @@ public class Main {
             System.out.println("\n--- User Menu ---");
             System.out.println("1. Search & Borrow Books");
             System.out.println("2. Search & Borrow CDs");
-            System.out.println("3. Borrow Book");
-            System.out.println("4. Borrow CD");
-            System.out.println("5. Return Item");
-            System.out.println("6. View My Loans");
-            System.out.println("7. View Overdue Report");
-            System.out.println("8. Pay Fine");
-            System.out.println("9. Logout");
+            System.out.println("3. Return Item");
+            System.out.println("4. View My Loans");
+            System.out.println("5. View Overdue Report");
+            System.out.println("6. Pay Fine");
+            System.out.println("7. Logout");
             System.out.print("Choose: ");
 
-            switch (scanner.nextLine()) {
+            String choice = scanner.nextLine().trim();
+            switch (choice) {
                 case "1": searchBooks(true); break; // allow borrow
                 case "2": searchCDs(true); break; // allow borrow
-                case "3": borrowBookFlow(); break;
-                case "4": borrowCDFlow(); break;
-                case "5": returnItemFlow(logged); break;
-                case "6": viewUserLoans(logged); break;
-                case "7": System.out.println(overdueReportService.generateReport(logged)); break;
-                case "8": payFine(logged); break;
-                case "9": running = false; break;
+                case "3": returnItemFlow(logged); break;
+                case "4": viewUserLoans(logged); break;
+                case "5": System.out.println(overdueReportService.generateReport(logged)); break;
+                case "6": payFine(logged); break;
+                case "7": running = false; break;
                 default: System.out.println("Invalid option.");
             }
         }
-    }
-
-    private static void borrowBookFlow() {
-        User logged = userService.getLoggedUser();
-        if (logged == null) { System.out.println("Please login first."); return; }
-        System.out.println("Borrow Book by: 1) Title 2) Author 3) ISBN");
-        String opt = scanner.nextLine();
-        List<Book> results;
-        switch (opt) {
-            case "1": System.out.print("Enter title or part: "); results = bookService.searchByTitle(scanner.nextLine()); break;
-            case "2": System.out.print("Enter author or part: "); results = bookService.searchByAuthor(scanner.nextLine()); break;
-            case "3": System.out.print("Enter ISBN or part: "); results = bookService.searchByIsbn(scanner.nextLine()); break;
-            default: System.out.println("Invalid option."); return;
-        }
-        if (results.isEmpty()) { System.out.println("No matching items found."); return; }
-        System.out.println("Matches:");
-        for (int i=0;i<results.size();i++) {
-            Book b = results.get(i);
-            String avail = b.getQuantity()>0?"Available":"Not Available";
-            System.out.println((i+1)+". " + b.getTitle()+" | " + b.getAuthor()+" | Qty: " + b.getQuantity() + " | " + avail);
-        }
-        System.out.print("Select number to borrow or press Enter to cancel: ");
-        String sel = scanner.nextLine(); if (sel.isBlank()) return;
-        try {
-            int idx = Integer.parseInt(sel)-1; if (idx<0||idx>=results.size()){ System.out.println("Invalid selection."); return; }
-            boolean ok = borrowService.borrowBookInstance(logged, results.get(idx));
-            System.out.println(ok?"Book borrowed successfully.":"This item is out of stock.");
-        } catch (NumberFormatException e) { System.out.println("Invalid input."); }
-    }
-
-    private static void borrowCDFlow() {
-        User logged = userService.getLoggedUser();
-        if (logged == null) { System.out.println("Please login first."); return; }
-        System.out.println("Borrow CD by: 1) Title 2) Artist");
-        String opt = scanner.nextLine();
-        List<CD> results;
-        switch (opt) {
-            case "1": System.out.print("Enter title or part: "); results = cdService.search(scanner.nextLine()); break;
-            case "2": System.out.print("Enter artist or part: "); results = cdService.search(scanner.nextLine()); break;
-            default: System.out.println("Invalid option."); return;
-        }
-        if (results.isEmpty()) { System.out.println("No matching items found."); return; }
-        System.out.println("Matches:");
-        for (int i=0;i<results.size();i++) {
-            CD c = results.get(i);
-            String avail = c.getQuantity() > 0 ? "Available" : "Not Available";
-            System.out.println((i+1)+". " + c.getTitle()+" | " + c.getArtist()+" | Qty: " + c.getQuantity() + " | " + avail);
-        }
-        System.out.print("Select number to borrow or press Enter to cancel: ");
-        String sel = scanner.nextLine(); if (sel.isBlank()) return;
-        try {
-            int idx = Integer.parseInt(sel)-1; if (idx<0||idx>=results.size()){ System.out.println("Invalid selection."); return; }
-            boolean ok = borrowService.borrowCDInstance(logged, results.get(idx));
-            System.out.println(ok?"CD borrowed successfully.":"This item is out of stock.");
-        } catch (NumberFormatException e) { System.out.println("Invalid input."); }
     }
 
     /**
@@ -390,15 +357,20 @@ public class Main {
     }
 
     private static void viewUserLoans(User user) {
+        // Show only active (not returned) loans so returned items don't appear.
         List<Loan> loans = LoanRepository.getUserLoans(user.getUsername());
-        if (loans.isEmpty()) {
-            System.out.println("No loans.");
+        List<Loan> active = new java.util.ArrayList<>();
+        for (Loan l : loans) if (!l.isReturned()) active.add(l);
+
+        if (active.isEmpty()) {
+            System.out.println("No active loans.");
             return;
         }
 
-        System.out.println("\n--- Your Loans ---");
-        for (Loan l : loans) {
-            System.out.println("- " + l.getItem().getTitle()
+        System.out.println("\n--- Your Active Loans ---");
+        for (Loan l : active) {
+            String mediaType = l.getItem() != null ? l.getItem().getMediaType() : "Unknown";
+            System.out.println("- [" + mediaType + "] " + l.getItem().getTitle()
                     + " | Borrowed: " + l.getBorrowedDate()
                     + " | Due: " + l.getDueDate()
                     + (l.isOverdue() ? " | OVERDUE" : ""));
@@ -406,23 +378,52 @@ public class Main {
     }
 
     private static void payFine(User user) {
-        // Read the stored fine balance (persisted when the overdue report is generated)
-        double fine = user.getFineBalance();
-        System.out.println("Fine: " + fine);
-        System.out.print("Enter amount: ");
+        // Calculate outstanding unpaid fines from loans (only unpaid fines)
+        List<Loan> loans = LoanRepository.getUserLoans(user.getUsername());
+        List<Loan> unpaid = new java.util.ArrayList<>();
+        int totalOutstanding = 0;
+        for (Loan l : loans) {
+            // A loan contributes to outstanding total if it has overdue days > 0 and fine not yet paid
+            if (l.isFinePaid()) continue;
+            int loanFine = l.getFineAmount() > 0 ? l.getFineAmount() : l.calculateFine();
+            boolean contributes = l.getFineAmount() > 0 || l.getOverdueDays() > 0;
+            if (contributes) {
+                unpaid.add(l);
+                totalOutstanding += loanFine;
+            }
 
+        }
+
+        System.out.println("Outstanding fine (unpaid): " + totalOutstanding + " NIS");
+        if (totalOutstanding == 0) {
+            System.out.println("You have no outstanding unpaid fines.");
+            return;
+        }
+
+        System.out.print("Enter amount to pay (must equal outstanding to clear): ");
         try {
             double amount = Double.parseDouble(scanner.nextLine());
-
-            // Validate the input against the stored fine balance
-            if (amount <= 0 || amount > fine) {
+            if (amount <= 0 || amount > totalOutstanding) {
                 System.out.println("Invalid amount.");
                 return;
             }
 
-            // Deduct the paid amount and persist the change
-            user.setFineBalance(fine - amount);
+            if ((int) amount != totalOutstanding) {
+                // For clarity, require full payment to mark loan fines as paid.
+                System.out.println("Partial payments are not supported. Please pay the full outstanding amount: " + totalOutstanding);
+                return;
+            }
+
+            // Mark the unpaid loans as paid and persist
+            for (Loan l : unpaid) {
+                l.setFinePaid(true);
+            }
+            LoanRepository.saveToFile();
+
+            // Clear user's stored fine balance and persist user
+            user.setFineBalance(0.0);
             UserRepository.updateUser(user);
+
             System.out.println("Payment successful! Remaining fine: " + user.getFineBalance());
         } catch (NumberFormatException e) {
             System.out.println("Invalid input.");
@@ -502,6 +503,7 @@ public class Main {
         System.out.println("1. Search by Title");
         System.out.println("2. Search by Artist");
         System.out.print("Choose: ");
+
         String opt = scanner.nextLine();
 
         List<CD> results;
@@ -509,13 +511,13 @@ public class Main {
         switch (opt) {
             case "1":
                 System.out.print("Enter part of title: ");
-                results = cdService.search(scanner.nextLine());
-                break;
+                results = cdService.searchByTitle(scanner.nextLine());
+                 break;
 
             case "2":
                 System.out.print("Enter part of artist: ");
-                results = cdService.search(scanner.nextLine());
-                break;
+                results = cdService.searchByArtist(scanner.nextLine());
+                 break;
 
             default:
                 System.out.println("Invalid option.");

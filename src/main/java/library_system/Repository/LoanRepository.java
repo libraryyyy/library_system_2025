@@ -96,7 +96,12 @@ public class LoanRepository {
                 if (loanObj.has("borrowedDate")) cleanLoan.set("borrowedDate", loanObj.get("borrowedDate"));
                 if (loanObj.has("dueDate")) cleanLoan.set("dueDate", loanObj.get("dueDate"));
                 if (loanObj.has("returned")) cleanLoan.set("returned", loanObj.get("returned"));
-                else cleanLoan.put("returned", false);
+                // Preserve finePaid flag when present; default false otherwise
+                if (loanObj.has("finePaid")) cleanLoan.set("finePaid", loanObj.get("finePaid"));
+                else cleanLoan.put("finePaid", false);
+                // Preserve fineAmount when present; default 0 otherwise
+                if (loanObj.has("fineAmount")) cleanLoan.set("fineAmount", loanObj.get("fineAmount"));
+                else cleanLoan.put("fineAmount", 0);
 
                 cleaned.add(cleanLoan);
                 // if original differs from cleaned, mark changed
@@ -114,6 +119,20 @@ public class LoanRepository {
                 for (Loan l : loaded) {
                     if (l.getUser() != null && l.getUser().getEmail() != null) {
                         l.getUser().setEmail(sanitizeEmail(l.getUser().getEmail()));
+                    }
+                    // Repair missing or inconsistent due dates if needed:
+                    // If dueDate is missing or before borrowedDate, recalculate using the media's borrow duration.
+                    try {
+                        if (l.getBorrowedDate() != null) {
+                            if (l.getDueDate() == null || l.getDueDate().isBefore(l.getBorrowedDate())) {
+                                if (l.getItem() != null) {
+                                    int bd = l.getItem().getBorrowDuration();
+                                    l.setDueDate(l.getBorrowedDate().plusDays(bd));
+                                }
+                            }
+                        }
+                    } catch (Exception ex) {
+                        // keep original loan if any unexpected problem; avoid throwing during load
                     }
                     loans.add(l);
                 }
@@ -167,6 +186,10 @@ public class LoanRepository {
                 if (l.getBorrowedDate() != null) loanObj.put("borrowedDate", l.getBorrowedDate().toString());
                 if (l.getDueDate() != null) loanObj.put("dueDate", l.getDueDate().toString());
                 loanObj.put("returned", l.isReturned());
+                // Persist whether the fine for this loan has been paid (default false)
+                loanObj.put("finePaid", l.isFinePaid());
+                // Persist recorded fine amount for this loan (if any)
+                loanObj.put("fineAmount", l.getFineAmount());
 
                 arr.add(loanObj);
             }
@@ -182,6 +205,16 @@ public class LoanRepository {
      * @param loan the loan to add
      */
     public static void addLoan(Loan loan) {
+        if (loan == null) return;
+
+        // Prevent creating duplicate active loans for the same user+item.
+        Loan existing = findActiveLoan(loan.getUser(), loan.getItem());
+        if (existing != null) {
+            // An active loan already exists: do not add another one.
+            System.out.println("Loan already exists for this user and item; skipping add.");
+            return;
+        }
+
         loans.add(loan);
         saveToFile();
     }
@@ -321,23 +354,87 @@ public class LoanRepository {
      */
     public static void markLoanReturned(Loan loan) {
         if (loan == null) return;
+
+        // Mark all matching active loans (defensive cleanup) for this user/item as returned.
+        boolean updated = false;
         for (Loan l : loans) {
-            if (l == loan) {
+            if (l.isReturned()) continue;
+            if (l.getUser() == null || loan.getUser() == null) continue;
+            if (!l.getUser().getUsername().equalsIgnoreCase(loan.getUser().getUsername())) continue;
+
+            // Match book by ISBN if present, otherwise by title+author. CD by title+artist.
+            library_system.domain.Media li = l.getItem();
+            library_system.domain.Media ri = loan.getItem();
+            if (li == null || ri == null) continue;
+
+            boolean match = false;
+            if (li instanceof library_system.domain.Book && ri instanceof library_system.domain.Book) {
+                String a = ((library_system.domain.Book) li).getIsbn();
+                String b = ((library_system.domain.Book) ri).getIsbn();
+                if (a != null && b != null && a.equalsIgnoreCase(b)) match = true;
+                else if (li.getTitle() != null && ri.getTitle() != null && li.getTitle().equalsIgnoreCase(ri.getTitle())) match = true;
+            } else if (li instanceof library_system.domain.CD && ri instanceof library_system.domain.CD) {
+                String t1 = li.getTitle();
+                String t2 = ri.getTitle();
+                String ar1 = ((library_system.domain.CD) li).getArtist();
+                String ar2 = ((library_system.domain.CD) ri).getArtist();
+                if (t1 != null && t2 != null && ar1 != null && ar2 != null && t1.equalsIgnoreCase(t2) && ar1.equalsIgnoreCase(ar2)) match = true;
+            }
+
+            if (match) {
                 l.setReturned(true);
-                saveToFile();
-                return;
+                updated = true;
             }
         }
-        // If not the same instance, try to find matching loan and mark
+
+        if (updated) saveToFile();
+    }
+
+    /**
+     * Marks the specified loan as returned, records an associated fine (if any), and persists change.
+     * This method updates matching stored loan entries so the loan record in loans.json is modified
+     * rather than appending a new entry.
+     *
+     * @param loan loan to mark returned
+     * @param fine amount charged for this loan (in NIS). If >0, recorded on matching loans.
+     */
+    public static void markLoanReturned(Loan loan, int fine) {
+        if (loan == null) return;
+
+        boolean updated = false;
         for (Loan l : loans) {
-            if (!l.isReturned() && l.getUser().getUsername().equalsIgnoreCase(loan.getUser().getUsername())
-                    && l.getItem() != null && loan.getItem() != null
-                    && l.getItem().getTitle().equalsIgnoreCase(loan.getItem().getTitle())) {
+            if (l.isReturned()) continue;
+            if (l.getUser() == null || loan.getUser() == null) continue;
+            if (!l.getUser().getUsername().equalsIgnoreCase(loan.getUser().getUsername())) continue;
+
+            library_system.domain.Media li = l.getItem();
+            library_system.domain.Media ri = loan.getItem();
+            if (li == null || ri == null) continue;
+
+            boolean match = false;
+            if (li instanceof library_system.domain.Book && ri instanceof library_system.domain.Book) {
+                String a = ((library_system.domain.Book) li).getIsbn();
+                String b = ((library_system.domain.Book) ri).getIsbn();
+                if (a != null && b != null && a.equalsIgnoreCase(b)) match = true;
+                else if (li.getTitle() != null && ri.getTitle() != null && li.getTitle().equalsIgnoreCase(ri.getTitle())) match = true;
+            } else if (li instanceof library_system.domain.CD && ri instanceof library_system.domain.CD) {
+                String t1 = li.getTitle();
+                String t2 = ri.getTitle();
+                String ar1 = ((library_system.domain.CD) li).getArtist();
+                String ar2 = ((library_system.domain.CD) ri).getArtist();
+                if (t1 != null && t2 != null && ar1 != null && ar2 != null && t1.equalsIgnoreCase(t2) && ar1.equalsIgnoreCase(ar2)) match = true;
+            }
+
+            if (match) {
                 l.setReturned(true);
-                saveToFile();
-                return;
+                if (fine > 0) {
+                    l.setFineAmount(fine);
+                }
+                updated = true;
             }
         }
+
+        if (updated) saveToFile();
     }
 
     /**
