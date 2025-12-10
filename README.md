@@ -1,142 +1,98 @@
+# Library Management System — 2025
 
-# Library System 2025
+A Java-based library management system that supports user registration, admin control,
+book & CD borrowing, return flow, overdue tracking, fines, and reminder notifications.
 
-#  Library Management System — 2025  
-A Java-based library management system that supports user registration, admin control, book & CD borrowing, return flow, overdue tracking, fines, and reminder notifications.
+## Features
 
----
+### User Features
+- Register & login
+- Search books (by title, author, ISBN)
+- Search CDs (by title, artist)
+- Borrow books & CDs
+- Return borrowed items
+- View active loans
+- View overdue report & fines
+- Pay fines
 
-##  Features  
-###  User Features  
-- Register & login  
-- Search books (by title, author, ISBN)  
-- Search CDs (by title, artist)  
-- Borrow books & CDs  
-- Return borrowed items  
-- View active loans  
-- View overdue report + fines  
-- Pay fines easily  
+### Admin Features
+- Login as admin
+- Add books & CDs
+- Search media
+- Send overdue reminders
+- Unregister users (only if no active loans or unpaid fines)
 
-###  Admin Features  
-- Login as admin  
-- Add books & CDs  
-- Search media  
-- Send overdue reminders  
-- Unregister users (only if no fines/loans)  
+## Search System
+- Books: title, author, ISBN
+- CDs: title, artist  
+Each search result displays title, author/artist, and availability.
 
----
+## Borrowing Rules
+A user can borrow items only if:
+- There are no unpaid fines
+- There are no overdue items
 
-##  Search System  
-Users can search books **by:**
-- Title (partial or full)
-- Author
-- ISBN  
+Borrowing is done through:
+- Search & Borrow Books
+- Search & Borrow CDs
 
-Users can search CDs **by:**
-- Title (partial or full)
-- Artist  
+Each loan records:
+- Borrow date
+- Due date
+- Media type (Book or CD)
+- Fine strategy
 
-Each search result displays:
-- Title  
-- Author/Artist  
-- Availability (Available / Borrowed)
+## Overdue & Fines
 
----
+| Media | Borrow Duration | Fine |
+|------|----------------|------|
+| Book | 28 days | 10 NIS per overdue book |
+| CD | 7 days | 20 NIS per overdue CD |
 
-##  Borrowing System  
-A user can borrow ONLY when:  
-- No unpaid fines  
-- No overdue items  
-- No active loans  
+The overdue report shows:
+- Total overdue books
+- Total overdue CDs
+- Total fine
+- Detailed breakdown per loan
 
-Borrowing is possible through:  
-- Search & Borrow Books  
-- Search & Borrow CDs  
+## Reminder System
+Admins can send overdue reminders.
+The system returns:
+- 0 → No users exist
+- 1 → Users exist but none are overdue
+- 2 → Reminders sent successfully
 
-Each loan records:  
-- Borrow date  
-- Due date  
-- Fine strategy (book OR CD pricing)  
+## JSON Persistence
+Data is stored using JSON files:
+- books.json
+- cds.json
 
----
+Runtime-generated files:
+- users.json
+- loans.json  
+(these are created automatically at runtime and excluded from version control)
 
-##  Overdue & Fines  
-Each item has a borrow duration:  
+## Design Patterns Used
+- Strategy Pattern – fine calculation
+- Observer Pattern – reminder notifications
+- Repository Pattern – JSON persistence
+- Polymorphism – Media as base class for Book & CD
 
-| Media | Days | Fine (per day late) |
-|------|------|----------------------|
-| Book | 28 days | 10 NIS/day |
-| CD   | 7 days  | 20 NIS/day |
+## Technologies
+- Java 21
+- Jackson
+- Maven
+- JUnit
+- IntelliJ IDEA
+- CLI-based interface
 
-The overdue report shows:  
-- Total overdue books  
-- Total overdue CDs  
-- Total fine  
-- Breakdown per loan  
+## How to Run
+```bash
+mvn clean compile
+mvn exec:java -Dexec.mainClass="library_system.CLI.Main"
 
----
-
-##  Reminder System  
-Admin can send reminders.  
-System returns:
-
-- **0** → No users exist  
-- **1** → Users exist but none are overdue  
-- **2** → Reminders sent successfully  
-
----
-
-## JSON Persistence  
-All data is saved in:
-
-```
-src/main/resources/users.json
-src/main/resources/books.json
-src/main/resources/cds.json
-src/main/resources/loans.json
-```
-
-Data **persists across runs**, including:  
-- Users  
-- Books  
-- CDs  
-- Borrow status  
-- Loans  
-- Fines  
-
----
-
-## 🔗 Design Patterns Used  
-- **Strategy Pattern** – fine calculation  
-- **Observer Pattern** – email reminders  
-- **Repository Pattern** – JSON storage  
-- **Polymorphism** – Media as base class for Book & CD  
-
----
-
-## Technologies  
-- Java 17  
-- Jackson (JSON serialization)  
-- JUnit (tests)  
-- IntelliJ IDEA  
-- CLI-based interface  
-
----
-
-## How to Run  
-Inside the project folder:
-
-```
-javac -d out $(find src/main/java -name "*.java")
-java -cp out library_system.CLI.Main
-```
-
----
-
-##  Authors  
-- **Sana Jabr**
+## Authors
+- **Sana Zafer Jabr**
 - **Sara abd aldayem**
 - Software Engineering — 2025  
-
-
 
