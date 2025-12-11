@@ -4,6 +4,7 @@ import library_system.domain.User;
 import jakarta.mail.*;
 import jakarta.mail.internet.MimeMessage;
 import org.junit.jupiter.api.Test;
+import org.mockito.MockedStatic;
 
 import java.util.Properties;
 
@@ -71,18 +72,30 @@ class EmailNotifierTest {
     }
 
     @Test
-    void testNotify_success() {
+    void testNotify_success_mockedTransport() {
+        Session session = createFakeSession();
+
         EmailNotifier notifier = new EmailNotifier(
                 "sender@test.com",
                 "123",
-                createFakeSession()
+                session
         );
 
         User user = new User();
         user.setEmail("valid@test.com");
 
-        notifier.notify(user, "Hello");
-        // لا يرمي خطأ → ناجح
+        // === أهم جزء: Mock لدالة Transport.send() ===
+        try (MockedStatic<Transport> mockedTransport = mockStatic(Transport.class)) {
+
+            mockedTransport
+                    .when(() -> Transport.send(any(Message.class)))
+                    .thenAnswer(invocation -> null);
+
+            notifier.notify(user, "Hello!");
+
+            // التأكد من استدعاء الإرسال
+            mockedTransport.verify(() -> Transport.send(any(Message.class)), times(1));
+        }
     }
 
     @Test
@@ -91,12 +104,17 @@ class EmailNotifierTest {
         Session session = createFakeSession();
         EmailNotifier notifier = new EmailNotifier("sender@test.com", "123", session);
 
-        MimeMessage spyMessage = spy(new MimeMessage(session));
-        doThrow(new MessagingException("forced error")).when(spyMessage).saveChanges();
+        MimeMessage msg = spy(new MimeMessage(session));
+        doThrow(new MessagingException("forced error")).when(msg).saveChanges();
 
         User user = new User();
         user.setEmail("valid@test.com");
 
-        notifier.notify(user, "Hello");
+        // Mock Transport.send لكي لا يخرج Error حقيقي
+        try (MockedStatic<Transport> mockedTransport = mockStatic(Transport.class)) {
+            mockedTransport.when(() -> Transport.send(any(Message.class))).thenAnswer(invocation -> null);
+
+            notifier.notify(user, "Hello");
+        }
     }
 }
