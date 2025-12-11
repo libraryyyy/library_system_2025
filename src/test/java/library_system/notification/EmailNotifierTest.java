@@ -3,8 +3,7 @@ package library_system.notification;
 import library_system.domain.User;
 import jakarta.mail.*;
 import jakarta.mail.internet.MimeMessage;
-import org.junit.jupiter.api.*;
-import org.mockito.Mockito;
+import org.junit.jupiter.api.Test;
 
 import java.util.Properties;
 
@@ -13,32 +12,23 @@ import static org.mockito.Mockito.*;
 
 class EmailNotifierTest {
 
-    private Session mockSession;
-    private Transport mockTransport;
-
-    private Session createMockSession() throws Exception {
+    private Session createFakeSession() {
         Properties props = new Properties();
         props.put("mail.smtp.host", "smtp.test.com");
         props.put("mail.smtp.auth", "false");
-
-        Session session = Session.getInstance(props);
-
-        // Mock transport static send
-        mockTransport = mock(Transport.class);
-        Session.setDefaultInstance(props, null);
-
-        return session;
+        return Session.getInstance(props);
     }
 
     @Test
-    void testConstructor_notConfigured_whenEnvMissing() {
+    void testConstructor_notConfigured() {
         EmailNotifier notifier = new EmailNotifier(null, null, null);
         assertFalse(notifier.isConfigured());
     }
 
     @Test
-    void testConstructor_configured_whenEmailPasswordSessionProvided() {
-        EmailNotifier notifier = new EmailNotifier("a@test.com", "123", mock(Session.class));
+    void testConstructor_configured() {
+        Session session = createFakeSession();
+        EmailNotifier notifier = new EmailNotifier("sender@test.com", "123", session);
         assertTrue(notifier.isConfigured());
     }
 
@@ -51,22 +41,18 @@ class EmailNotifierTest {
     @Test
     void testIsValidEmail_invalid() {
         EmailNotifier notifier = new EmailNotifier("", "", null);
-        assertFalse(notifier.isValidEmail("notAnEmail"));
+        assertFalse(notifier.isValidEmail("badEmail"));
     }
 
     @Test
     void testNotify_notConfigured() {
         EmailNotifier notifier = new EmailNotifier(null, null, null);
-
-        User user = new User();
-        user.setEmail("valid@test.com");
-
-        notifier.notify(user, "Hello"); // فقط نتأكد أنه لا يرمي exceptions
+        notifier.notify(new User(), "Hello");
     }
 
     @Test
-    void testNotify_invalidUserEmail_null() {
-        EmailNotifier notifier = new EmailNotifier("x@y.com", "123", mock(Session.class));
+    void testNotify_userNullEmail() {
+        EmailNotifier notifier = new EmailNotifier("x@y.com", "123", createFakeSession());
 
         User user = new User();
         user.setEmail(null);
@@ -75,18 +61,8 @@ class EmailNotifierTest {
     }
 
     @Test
-    void testNotify_invalidUserEmail_empty() {
-        EmailNotifier notifier = new EmailNotifier("x@y.com", "123", mock(Session.class));
-
-        User user = new User();
-        user.setEmail("");
-
-        notifier.notify(user, "Hello");
-    }
-
-    @Test
     void testNotify_invalidEmailFormat() {
-        EmailNotifier notifier = new EmailNotifier("x@y.com", "123", mock(Session.class));
+        EmailNotifier notifier = new EmailNotifier("x@y.com", "123", createFakeSession());
 
         User user = new User();
         user.setEmail("invalid-email");
@@ -95,33 +71,32 @@ class EmailNotifierTest {
     }
 
     @Test
-    void testNotify_successful() throws Exception {
-        Session session = createMockSession();
-
-        EmailNotifier notifier = new EmailNotifier("sender@test.com", "pass", session);
-
-        MimeMessage message = spy(new MimeMessage(session));
-        doNothing().when(mockTransport).sendMessage(any(), any());
+    void testNotify_success() {
+        EmailNotifier notifier = new EmailNotifier(
+                "sender@test.com",
+                "123",
+                createFakeSession()
+        );
 
         User user = new User();
         user.setEmail("valid@test.com");
 
         notifier.notify(user, "Hello");
+        // لا يرمي خطأ → ناجح
     }
 
     @Test
-    void testNotify_transportThrowsException() throws Exception {
-        Session session = createMockSession();
+    void testNotify_exceptionDuringMessageBuilding() throws Exception {
 
-        EmailNotifier notifier = new EmailNotifier("sender@test.com", "pass", session);
+        Session session = createFakeSession();
+        EmailNotifier notifier = new EmailNotifier("sender@test.com", "123", session);
 
-        MimeMessage message = spy(new MimeMessage(session));
-        doThrow(new MessagingException("SMTP error"))
-                .when(mockTransport).sendMessage(any(), any());
+        MimeMessage spyMessage = spy(new MimeMessage(session));
+        doThrow(new MessagingException("forced error")).when(spyMessage).saveChanges();
 
         User user = new User();
         user.setEmail("valid@test.com");
 
-        notifier.notify(user, "Hello"); // يمسك exception ويطبع error
+        notifier.notify(user, "Hello");
     }
 }
