@@ -1,8 +1,7 @@
 package library_system.service;
 
-import library_system.Repository.LoanRepository;
+import library_system.repository.LoanRepository;
 import library_system.domain.*;
-import library_system.Repository.UserRepository;
 
 import java.util.ArrayList;
 import java.util.List;

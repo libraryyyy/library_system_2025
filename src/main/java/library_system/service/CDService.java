@@ -1,7 +1,7 @@
 package library_system.service;
 
 
-import library_system.Repository.CDRepository;
+import library_system.repository.CDRepository;
 import library_system.domain.CD;
 
 import java.util.List;

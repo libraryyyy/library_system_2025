@@ -1,7 +1,6 @@
-package library_system.Service;
+package library_system.service;
 
 import library_system.domain.Admin;
-import library_system.service.AdminService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

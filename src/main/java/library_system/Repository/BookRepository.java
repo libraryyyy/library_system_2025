@@ -1,4 +1,4 @@
-package library_system.Repository;
+package library_system.repository;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;

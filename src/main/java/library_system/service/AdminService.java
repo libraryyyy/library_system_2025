@@ -1,8 +1,8 @@
 package library_system.service;
 
 import library_system.domain.Admin;
-import library_system.Repository.LoanRepository;
-import library_system.Repository.UserRepository;
+import library_system.repository.LoanRepository;
+import library_system.repository.UserRepository;
 import library_system.domain.User;
 
 /**

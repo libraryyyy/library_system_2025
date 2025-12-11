@@ -1,8 +1,8 @@
 package library_system.service;
 
-import library_system.Repository.BookRepository;
-import library_system.Repository.CDRepository;
-import library_system.Repository.LoanRepository;
+import library_system.repository.BookRepository;
+import library_system.repository.CDRepository;
+import library_system.repository.LoanRepository;
 import library_system.domain.*;
 
 /**
@@ -123,7 +123,7 @@ public class BorrowService {
         if (fine > 0) {
             LoanRepository.markLoanReturned(loan, fine);
             user.addFine(fine);
-            library_system.Repository.UserRepository.updateUser(user);
+            library_system.repository.UserRepository.updateUser(user);
             System.out.println("Return completed with fine: " + fine + " NIS");
         } else {
             LoanRepository.markLoanReturned(loan);

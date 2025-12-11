@@ -1,8 +1,7 @@
-package library_system.Service;
+package library_system.service;
 
-import library_system.Repository.LoanRepository;
+import library_system.repository.LoanRepository;
 import library_system.domain.*;
-import library_system.service.OverdueReportService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

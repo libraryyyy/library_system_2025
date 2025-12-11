@@ -1,12 +1,11 @@
-package library_system.Service;
+package library_system.service;
 
-import library_system.Repository.LoanRepository;
-import library_system.Repository.UserRepository;
+import library_system.repository.LoanRepository;
+import library_system.repository.UserRepository;
 import library_system.domain.Book;
 import library_system.domain.Loan;
 import library_system.domain.User;
 import library_system.notification.Observer;
-import library_system.service.ReminderService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;

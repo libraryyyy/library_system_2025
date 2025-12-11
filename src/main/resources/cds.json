@@ -1,43 +1,19 @@
 [ {
   "mediaType" : "CD",
-  "title" : "Fearless",
-  "artist" : "Taylor Swift",
-  "quantity" : 2,
-  "borrowDuration" : 7
-}, {
-  "mediaType" : "CD",
-  "title" : "Random Access Memories",
-  "artist" : "Daft Punk",
-  "quantity" : 2,
-  "borrowDuration" : 7
-}, {
-  "mediaType" : "CD",
-  "title" : "Thriller",
-  "artist" : "Michael Jackson",
-  "quantity" : 3,
-  "borrowDuration" : 7
-}, {
-  "mediaType" : "CD",
-  "title" : "25",
-  "artist" : "Adele",
-  "quantity" : 5,
-  "borrowDuration" : 7
-}, {
-  "mediaType" : "CD",
-  "title" : "Divide",
-  "artist" : "Ed Sheeran",
-  "quantity" : 3,
-  "borrowDuration" : 7
-}, {
-  "mediaType" : "CD",
-  "title" : "The Eminem Show",
+  "title" : "Revival",
   "artist" : "Eminem",
-  "quantity" : 4,
+  "quantity" : 1,
   "borrowDuration" : 7
 }, {
   "mediaType" : "CD",
-  "title" : "House of Freaks",
-  "artist" : "Tantilla",
-  "quantity" : 0,
+  "title" : "Kamikaze",
+  "artist" : "Eminem",
+  "quantity" : 1,
+  "borrowDuration" : 7
+}, {
+  "mediaType" : "CD",
+  "title" : "Scorpion",
+  "artist" : "Drake",
+  "quantity" : 1,
   "borrowDuration" : 7
 } ]

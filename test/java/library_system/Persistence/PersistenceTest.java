@@ -1,9 +1,9 @@
-package library_system.Persistence;
+package library_system.persistence;
 
-import library_system.Repository.BookRepository;
-import library_system.Repository.CDRepository;
-import library_system.Repository.LoanRepository;
-import library_system.Repository.UserRepository;
+import library_system.repository.BookRepository;
+import library_system.repository.CDRepository;
+import library_system.repository.LoanRepository;
+import library_system.repository.UserRepository;
 import library_system.domain.Book;
 import library_system.domain.CD;
 import library_system.domain.User;

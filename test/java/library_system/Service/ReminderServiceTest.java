@@ -1,7 +1,7 @@
-package library_system.Service;
+package library_system.service;
 
-import library_system.Repository.LoanRepository;
-import library_system.Repository.UserRepository;
+import library_system.repository.LoanRepository;
+import library_system.repository.UserRepository;
 import library_system.domain.CD;
 import library_system.domain.Book;
 import library_system.domain.Loan;

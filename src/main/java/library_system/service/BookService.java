@@ -1,6 +1,6 @@
 package library_system.service;
 
-import library_system.Repository.BookRepository;
+import library_system.repository.BookRepository;
 import library_system.domain.Book;
 
 import java.util.List;

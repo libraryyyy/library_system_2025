@@ -1,57 +1,15 @@
 [ {
   "mediaType" : "BOOK",
-  "title" : "Harry Potter and the Sorcerer's Stone",
-  "author" : "J.K. Rowling",
-  "isbn" : "01",
+  "title" : "Java Basics",
+  "author" : "John Doe",
+  "isbn" : "111",
   "quantity" : 1,
   "borrowDuration" : 28
 }, {
   "mediaType" : "BOOK",
-  "title" : "Harry Potter and the Chamber of Secrets",
-  "author" : "J.K. Rowling",
-  "isbn" : "02",
-  "quantity" : 3,
-  "borrowDuration" : 28
-}, {
-  "mediaType" : "BOOK",
-  "title" : "The Little Prince",
-  "author" : "Antoine de Saint-Exupéry",
-  "isbn" : "03",
+  "title" : "Advanced Java",
+  "author" : "Jane Doe",
+  "isbn" : "222",
   "quantity" : 1,
-  "borrowDuration" : 28
-}, {
-  "mediaType" : "BOOK",
-  "title" : "The Hobbit",
-  "author" : "J.R.R. Tolkien",
-  "isbn" : "04",
-  "quantity" : 0,
-  "borrowDuration" : 28
-}, {
-  "mediaType" : "BOOK",
-  "title" : "Atomic Habits",
-  "author" : "James Clear",
-  "isbn" : "05",
-  "quantity" : 6,
-  "borrowDuration" : 28
-}, {
-  "mediaType" : "BOOK",
-  "title" : "Hero on a Bicycle",
-  "author" : "Shirley Hughes",
-  "isbn" : "06",
-  "quantity" : 8,
-  "borrowDuration" : 28
-}, {
-  "mediaType" : "BOOK",
-  "title" : "The Circular Staircase",
-  "author" : "Mary Roberts Rinehart",
-  "isbn" : "07",
-  "quantity" : 5,
-  "borrowDuration" : 28
-}, {
-  "mediaType" : "BOOK",
-  "title" : "Maldad Latente",
-  "author" : "Sandra Brown",
-  "isbn" : "08",
-  "quantity" : 0,
   "borrowDuration" : 28
 } ]

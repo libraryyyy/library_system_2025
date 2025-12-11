@@ -1,8 +1,7 @@
-package library_system.Service;
+package library_system.service;
 
-import library_system.Repository.BookRepository;
+import library_system.repository.BookRepository;
 import library_system.domain.Book;
-import library_system.service.BookService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

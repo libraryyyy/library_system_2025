@@ -1,4 +1,4 @@
-package library_system.Repository;
+package library_system.repository;
 
 import library_system.domain.Book;
 import org.junit.jupiter.api.AfterEach;
