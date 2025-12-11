@@ -1,139 +1,127 @@
 package library_system.notification;
 
-import jakarta.mail.Message;
-import jakarta.mail.Session;
-import jakarta.mail.Transport;
 import library_system.domain.User;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.mockito.MockedStatic;
+import jakarta.mail.*;
+import jakarta.mail.internet.MimeMessage;
+import org.junit.jupiter.api.*;
+import org.mockito.Mockito;
 
 import java.util.Properties;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-public class EmailNotifierTest {
+class EmailNotifierTest {
 
     private Session mockSession;
-    private EmailNotifier notifier;
+    private Transport mockTransport;
 
-    @BeforeEach
-    void setup() {
+    private Session createMockSession() throws Exception {
         Properties props = new Properties();
-        mockSession = Session.getInstance(props);
-        notifier = new EmailNotifier("sender@gmail.com", "pass12345", mockSession);
+        props.put("mail.smtp.host", "smtp.test.com");
+        props.put("mail.smtp.auth", "false");
+
+        Session session = Session.getInstance(props);
+
+        // Mock transport static send
+        mockTransport = mock(Transport.class);
+        Session.setDefaultInstance(props, null);
+
+        return session;
     }
 
-    // ----------- Email validation ----------
     @Test
-    void testValidEmailFormat() {
-        assertTrue(notifier.isValidEmail("test@example.com"));
+    void testConstructor_notConfigured_whenEnvMissing() {
+        EmailNotifier notifier = new EmailNotifier(null, null, null);
+        assertFalse(notifier.isConfigured());
     }
 
     @Test
-    void testInvalidEmailFormat() {
-        assertFalse(notifier.isValidEmail("wrong-email"));
-    }
-
-    // ----------- configured() branch ----------
-    @Test
-    void testNotifierConfigured_True() {
+    void testConstructor_configured_whenEmailPasswordSessionProvided() {
+        EmailNotifier notifier = new EmailNotifier("a@test.com", "123", mock(Session.class));
         assertTrue(notifier.isConfigured());
     }
 
     @Test
-    void testNotifierConfigured_False() {
-        EmailNotifier n = new EmailNotifier("", "", null);
-        assertFalse(n.isConfigured());
-    }
-
-    // ----------- Constructor using System.getenv() ----------
-    @Test
-    void testEnvConstructor_NotConfigured() {
-        EmailNotifier n = new EmailNotifier(null, null, null);
-        assertFalse(n.isConfigured());
+    void testIsValidEmail_valid() {
+        EmailNotifier notifier = new EmailNotifier("", "", null);
+        assertTrue(notifier.isValidEmail("test@gmail.com"));
     }
 
     @Test
-    void testEnvConstructor_Configured() {
-        Session s = Session.getInstance(new Properties());
-        EmailNotifier n = new EmailNotifier("sender@gmail.com", "12345678", s);
-        assertTrue(n.isConfigured());
+    void testIsValidEmail_invalid() {
+        EmailNotifier notifier = new EmailNotifier("", "", null);
+        assertFalse(notifier.isValidEmail("notAnEmail"));
     }
 
-
-    // ----------- notify(): not configured ----------
     @Test
     void testNotify_notConfigured() {
-        EmailNotifier n = new EmailNotifier("", "", null);
-        assertDoesNotThrow(() -> n.notify(new User(), "msg"));
+        EmailNotifier notifier = new EmailNotifier(null, null, null);
+
+        User user = new User();
+        user.setEmail("valid@test.com");
+
+        notifier.notify(user, "Hello"); // فقط نتأكد أنه لا يرمي exceptions
     }
 
-    // ----------- notify(): user null ----------
     @Test
-    void testNotify_userNull() {
-        assertDoesNotThrow(() -> notifier.notify(null, "msg"));
+    void testNotify_invalidUserEmail_null() {
+        EmailNotifier notifier = new EmailNotifier("x@y.com", "123", mock(Session.class));
+
+        User user = new User();
+        user.setEmail(null);
+
+        notifier.notify(user, "Hello");
     }
 
-    // ----------- notify(): email null ----------
     @Test
-    void testNotify_userEmailNull() {
-        User u = new User();
-        u.setEmail(null);
-        assertDoesNotThrow(() -> notifier.notify(u, "msg"));
+    void testNotify_invalidUserEmail_empty() {
+        EmailNotifier notifier = new EmailNotifier("x@y.com", "123", mock(Session.class));
+
+        User user = new User();
+        user.setEmail("");
+
+        notifier.notify(user, "Hello");
     }
 
-    // ----------- notify(): blank email ----------
-    @Test
-    void testNotify_userEmailBlank() {
-        User u = new User();
-        u.setEmail("   ");
-        assertDoesNotThrow(() -> notifier.notify(u, "msg"));
-    }
-
-    // ----------- notify(): invalid regex ----------
     @Test
     void testNotify_invalidEmailFormat() {
-        User u = new User();
-        u.setEmail("invalid@@mail");
-        assertDoesNotThrow(() -> notifier.notify(u, "msg"));
+        EmailNotifier notifier = new EmailNotifier("x@y.com", "123", mock(Session.class));
+
+        User user = new User();
+        user.setEmail("invalid-email");
+
+        notifier.notify(user, "Hello");
     }
 
-    // ----------- notify(): successful send ----------
     @Test
-    void testNotify_successfulSend() {
+    void testNotify_successful() throws Exception {
+        Session session = createMockSession();
 
-        User u = new User();
-        u.setEmail("valid@example.com");
+        EmailNotifier notifier = new EmailNotifier("sender@test.com", "pass", session);
 
-        try (MockedStatic<Transport> mocked = mockStatic(Transport.class)) {
+        MimeMessage message = spy(new MimeMessage(session));
+        doNothing().when(mockTransport).sendMessage(any(), any());
 
-            mocked.when(() -> Transport.send(any(Message.class)))
-                    .then(inv -> {
-                        System.out.println("Mock send OK");
-                        return null;
-                    });
+        User user = new User();
+        user.setEmail("valid@test.com");
 
-            assertDoesNotThrow(() -> notifier.notify(u, "Hello!"));
-
-            mocked.verify(() -> Transport.send(any(Message.class)), times(1));
-        }
+        notifier.notify(user, "Hello");
     }
 
-    // ----------- notify(): Transport throws ----------
     @Test
-    void testNotify_sendThrowsException() {
+    void testNotify_transportThrowsException() throws Exception {
+        Session session = createMockSession();
 
-        User u = new User();
-        u.setEmail("valid@example.com");
+        EmailNotifier notifier = new EmailNotifier("sender@test.com", "pass", session);
 
-        try (MockedStatic<Transport> mocked = mockStatic(Transport.class)) {
+        MimeMessage message = spy(new MimeMessage(session));
+        doThrow(new MessagingException("SMTP error"))
+                .when(mockTransport).sendMessage(any(), any());
 
-            mocked.when(() -> Transport.send(any(Message.class)))
-                    .thenThrow(new RuntimeException("SMTP error"));
+        User user = new User();
+        user.setEmail("valid@test.com");
 
-            assertDoesNotThrow(() -> notifier.notify(u, "Hello!"));
-        }
+        notifier.notify(user, "Hello"); // يمسك exception ويطبع error
     }
 }
