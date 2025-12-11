@@ -27,7 +27,7 @@ public class OverdueReport {
     private int overdueCDs;
 
     /** Default constructor for JSON use. */
-    public OverdueReport() {}
+   // public OverdueReport() {}
 
     /**
      * Creates a new report instance with the given details.
@@ -49,7 +49,7 @@ public class OverdueReport {
     }
 
     public void setOverdueLoans(List<Loan> overdueLoans) {
-        this.overdueLoans = overdueLoans;
+      //  this.overdueLoans = overdueLoans;
     }
 
     public int getTotalFine() {
@@ -57,7 +57,7 @@ public class OverdueReport {
     }
 
     public void setTotalFine(int totalFine) {
-        this.totalFine = totalFine;
+  //      this.totalFine = totalFine;
     }
 
     public int getOverdueBooks() {
@@ -65,16 +65,18 @@ public class OverdueReport {
     }
 
     public void setOverdueBooks(int overdueBooks) {
-        this.overdueBooks = overdueBooks;
+   //     this.overdueBooks = overdueBooks;
     }
 
     public int getOverdueCDs() {
         return overdueCDs;
     }
 
-    public void setOverdueCDs(int overdueCDs) {
+  /*  public void setOverdueCDs(int overdueCDs) {
         this.overdueCDs = overdueCDs;
     }
+    */
+
 
     /**
      * Creates a formatted string representation of this report.
@@ -101,4 +103,6 @@ public class OverdueReport {
 
         return sb.toString();
     }
+
+
 }

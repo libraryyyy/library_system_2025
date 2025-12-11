@@ -45,6 +45,11 @@ public class UserRepository {
         }
     }
 
+    /** Returns internal user list (used by tests). */
+    public static List<User> getUsers() {
+        return users;
+    }
+
     /**
      * Saves users to disk atomically.
      */
@@ -165,4 +170,22 @@ public class UserRepository {
         s = s.replaceAll("\\s+", "");
         return s;
     }
+    /**
+     * Used only for unit testing to override the JSON file path.
+     */
+    public static void overrideFilePathForTesting(String testFilePath) {
+        if (testFilePath == null || testFilePath.isBlank()) return;
+        try {
+            File newFile = new File(testFilePath);
+            FileUtil.ensureDataDirExists();
+            if (!newFile.exists()) newFile.createNewFile();
+            // update internal FILE object through reflection
+            var field = UserRepository.class.getDeclaredField("FILE");
+            field.setAccessible(true);
+            field.set(null, newFile);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
 }

@@ -18,6 +18,12 @@ public class Book extends Media {
         this.isbn = isbn;
     }
 
+    public Book(String title, String author, String isbn, int quantity) {
+        super(title);
+        this.author = author;
+        this.isbn = isbn;
+        super.setQuantity(quantity);
+    }
     public String getAuthor() { return author; }
     public void setAuthor(String author) { this.author = author; }
 

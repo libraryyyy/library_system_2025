@@ -6,7 +6,6 @@ import jakarta.mail.internet.*;
 
 import java.util.Properties;
 import java.util.regex.Pattern;
-
 /**
  * Email notifier which sends notifications to users using Gmail SMTP.
  *
@@ -51,21 +50,47 @@ public class EmailNotifier implements Observer {
         this.configured = true;
     }
 
+    public EmailNotifier(String email, String password, Session session) {
+        this.senderEmail = email;
+        this.senderPassword = password;
+        this.session = session;
+        this.configured = (email != null && !email.isBlank() && password != null && !password.isBlank() && session != null);
+    }
+
+    private static Session createSession(String email, String password) {
+        if (email == null || password == null || email.isBlank() || password.isBlank()) {
+            return null;
+        }
+
+        Properties props = new Properties();
+        props.put("mail.smtp.auth", "true");
+        props.put("mail.smtp.starttls.enable", "true");
+        props.put("mail.smtp.host", "smtp.gmail.com");
+        props.put("mail.smtp.port", "587");
+
+        return Session.getInstance(props, new Authenticator() {
+            @Override
+            protected PasswordAuthentication getPasswordAuthentication() {
+                return new PasswordAuthentication(email, password);
+            }
+        });
+    }
+
     @Override
     public void notify(User user, String messageBody) {
         if (!configured) {
-            System.out.println("Email notifier is not configured. Notification skipped for user: " + (user != null ? user.getUsername() : "unknown"));
+            System.out.println("Email notifier not configured.");
             return;
         }
 
         if (user == null || user.getEmail() == null || user.getEmail().isBlank()) {
-            System.out.println("Skipping notification: user or user email is missing.");
+            System.out.println("Invalid user email.");
             return;
         }
 
         String recipient = user.getEmail().trim();
-        if (!isValidEmail(recipient)) {
-            System.out.println("Skipping notification: invalid email address: " + recipient);
+        if (!SIMPLE_EMAIL_REGEX.matcher(recipient).matches()) {
+            System.out.println("Invalid email address: " + recipient);
             return;
         }
 
@@ -79,18 +104,12 @@ public class EmailNotifier implements Observer {
             Transport.send(message);
             System.out.println("Email sent successfully to: " + recipient);
 
-        } catch (AuthenticationFailedException e) {
-            System.out.println("SMTP Authentication failed. Please verify EMAIL_USERNAME and EMAIL_PASSWORD environment variables (use a Gmail App Password). Error: " + e.getMessage());
-        } catch (SendFailedException e) {
-            System.out.println("Failed to send email to " + recipient + ". Address was rejected or invalid.");
-        } catch (MessagingException e) {
-            System.out.println("An error occurred while sending email to " + recipient + ": " + e.getMessage());
         } catch (Exception e) {
-            System.out.println("Unexpected error while sending email: " + e.getMessage());
+            System.out.println("Error sending email: " + e.getMessage());
         }
     }
 
-    private boolean isValidEmail(String email) {
+    public boolean isValidEmail(String email) {
         return SIMPLE_EMAIL_REGEX.matcher(email).matches();
     }
 

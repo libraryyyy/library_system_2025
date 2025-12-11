@@ -17,7 +17,7 @@ import java.util.List;
 public class CDRepository {
 
     private static final List<CD> cds = new ArrayList<>();
-    private static final String FILE_PATH = "src/main/resources/cds.json";
+    private static  String FILE_PATH = "src/main/resources/cds.json";
 
     private static final ObjectMapper mapper = MapperProvider.MAPPER;
 
@@ -198,4 +198,15 @@ public class CDRepository {
         if (id == null) return null;
         for (CD c : cds) if (c.getId().equals(id)) return c;
         return null;
-    }}
+    }
+    /**
+     * Used only for unit testing to override the JSON file path.
+     *
+     * @param testPath alternate path for testing
+     */
+    public static void overrideFilePathForTesting(String testPath) {
+        if (testPath == null || testPath.isBlank()) return;
+        FILE_PATH = testPath;
+    }
+
+}

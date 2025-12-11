@@ -42,9 +42,9 @@ public class Admin {
      *
      * @param username new username
      */
-    public void setUsername(String username) {
-        this.username = username;
-    }
+   // public void setUsername(String username) {
+    //    this.username = username;
+  //  }
 
     /**
      * @return the admin's password
@@ -58,7 +58,7 @@ public class Admin {
      *
      * @param password new password
      */
-    public void setPassword(String password) {
-        this.password = password;
-    }
+   // public void setPassword(String password) {
+     //   this.password = password;
+  //  }
 }
