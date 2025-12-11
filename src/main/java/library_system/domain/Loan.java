@@ -24,6 +24,7 @@ public class Loan {
      */
     private Media item;
 
+
     /** The date the item was borrowed. */
     @JsonFormat(shape = JsonFormat.Shape.STRING)
     private LocalDate borrowedDate;

@@ -1,15 +1,8 @@
 [ {
   "mediaType" : "BOOK",
-  "title" : "Java Basics",
-  "author" : "John Doe",
-  "isbn" : "111",
-  "quantity" : 1,
-  "borrowDuration" : 28
-}, {
-  "mediaType" : "BOOK",
-  "title" : "Advanced Java",
-  "author" : "Jane Doe",
-  "isbn" : "222",
+  "title" : "77",
+  "author" : "AI",
+  "isbn" : "Russell",
   "quantity" : 1,
   "borrowDuration" : 28
 } ]

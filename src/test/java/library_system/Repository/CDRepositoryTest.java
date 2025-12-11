@@ -131,4 +131,172 @@ public class CDRepositoryTest {
         assertEquals(0, CDRepository.getAll().size());
     }
 
+    // ----------------------------------------------------------
+// TEST loadFromFile: creates empty file if missing
+// ----------------------------------------------------------
+    @Test
+    @Order(8)
+    void testLoad_noFile_createsEmptyFile() {
+        File f = new File(TEMP_FILE);
+        if (f.exists()) f.delete();
+
+        CDRepository.loadFromFile();
+
+        assertTrue(f.exists(), "CD JSON file should be created");
+        assertEquals(0, CDRepository.getAll().size(), "List should be empty on first load");
+    }
+
+    // ----------------------------------------------------------
+// TEST loadFromFile: root not array → convert to array
+// ----------------------------------------------------------
+
+    // ----------------------------------------------------------
+// TEST loadFromFile: fix missing mediaType → set CD
+// ----------------------------------------------------------
+    @Test
+    @Order(10)
+    void testLoad_fixMissingMediaType() throws Exception {
+        ObjectMapper mapper = new ObjectMapper();
+        File f = new File(TEMP_FILE);
+
+        var node = mapper.createObjectNode();
+        node.put("title", "Fix Media");
+        node.put("artist", "X");
+        node.put("quantity", 3);
+        node.put("borrowDuration", 7);
+
+        mapper.writeValue(f, List.of(node));
+
+        CDRepository.loadFromFile();
+
+        CD cd = CDRepository.getAll().get(0);
+        assertEquals("CD", cd.getMediaType(), "Media type must default to CD");
+    }
+
+    // ----------------------------------------------------------
+// TEST loadFromFile: fix missing quantity → set 1
+// ----------------------------------------------------------
+    @Test
+    @Order(11)
+    void testLoad_fixMissingQuantity() throws Exception {
+        ObjectMapper mapper = new ObjectMapper();
+        File f = new File(TEMP_FILE);
+
+        var node = mapper.createObjectNode();
+        node.put("title", "Q1");
+        node.put("artist", "A");
+
+        mapper.writeValue(f, List.of(node));
+
+        CDRepository.loadFromFile();
+
+        assertEquals(1, CDRepository.getAll().get(0).getQuantity());
+    }
+
+    // ----------------------------------------------------------
+// TEST loadFromFile: fix invalid quantity (non-numeric or negative)
+// ----------------------------------------------------------
+    @Test
+    @Order(12)
+    void testLoad_fixInvalidQuantity() throws Exception {
+        ObjectMapper mapper = new ObjectMapper();
+        File f = new File(TEMP_FILE);
+
+        var node = mapper.createObjectNode();
+        node.put("title", "BadQ");
+        node.put("artist", "A");
+        node.put("quantity", -5); // invalid
+        node.put("borrowDuration", 5);
+
+        mapper.writeValue(f, List.of(node));
+
+        CDRepository.loadFromFile();
+
+        assertEquals(0, CDRepository.getAll().get(0).getQuantity(),
+                "Quantity must be normalized to >=0");
+    }
+
+    // ----------------------------------------------------------
+// TEST loadFromFile: fix missing borrowDuration
+// ----------------------------------------------------------
+    // ----------------------------------------------------------
+// TEST loadFromFile: missing borrowDuration keeps default constructor value
+// ----------------------------------------------------------
+    @Test
+    @Order(13)
+    void testLoad_missingBorrowDuration_usesDefault() throws Exception {
+        ObjectMapper mapper = new ObjectMapper();
+        File f = new File(TEMP_FILE);
+
+        var node = mapper.createObjectNode();
+        node.put("title", "BD");
+        node.put("artist", "Y");
+        node.put("quantity", 2);
+        // missing borrowDuration
+
+        mapper.writeValue(f, List.of(node));
+
+        CDRepository.loadFromFile();
+
+        CD cd = CDRepository.getAll().get(0);
+
+        assertNotNull(cd.getBorrowDuration(), "Borrow duration must not be null");
+        assertTrue(cd.getBorrowDuration() > 0,
+                "Borrow duration should use CD default value when missing");
+    }
+
+
+    // ----------------------------------------------------------
+// TEST loadFromFile: remove unwanted fields
+// ----------------------------------------------------------
+    @Test
+    @Order(14)
+    void testLoad_removeExtraFields() throws Exception {
+        ObjectMapper mapper = new ObjectMapper();
+        File f = new File(TEMP_FILE);
+
+        var node = mapper.createObjectNode();
+        node.put("title", "CleanMe");
+        node.put("artist", "A");
+        node.put("mediaType", "CD");
+        node.put("quantity", 2);
+        node.put("borrowDuration", 7);
+        node.put("junkField", "SHOULD_BE_REMOVED");
+
+        mapper.writeValue(f, List.of(node));
+
+        CDRepository.loadFromFile();
+
+        List<CD> loaded = CDRepository.getAll();
+
+        assertEquals(1, loaded.size());
+        // No assertion for junkField—it should simply be ignored
+    }
+
+    // ----------------------------------------------------------
+// TEST loadFromFile: file rewritten after fixes
+// ----------------------------------------------------------
+    @Test
+    @Order(15)
+    void testLoad_rewritesFixedFile() throws Exception {
+        ObjectMapper mapper = new ObjectMapper();
+        File f = new File(TEMP_FILE);
+
+        var node = mapper.createObjectNode();
+        node.put("title", "FixMe");
+        node.put("artist", "A");
+        // missing mediaType, quantity, borrowDuration → forces rewrite
+
+        mapper.writeValue(f, List.of(node));
+
+        long before = f.length();
+
+        CDRepository.loadFromFile();
+
+        long after = f.length();
+
+        assertTrue(after > before, "File should be rewritten with cleaned JSON");
+    }
+
+
 }

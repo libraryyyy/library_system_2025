@@ -20,6 +20,8 @@ public class MapperProvider {
 
     /**
      * Shared ObjectMapper instance used by all repository classes.
+     * <p>
+     * Automatically configured to handle Java 8 date/time types and ignore unknown properties.
      */
     public static ObjectMapper MAPPER = createMapper();
 
@@ -34,14 +36,28 @@ public class MapperProvider {
 
     /**
      * Creates and configures a new ObjectMapper instance.
+     * <p>
+     * Configuration includes:
+     * <ul>
+     *     <li>JavaTimeModule for LocalDate/LocalDateTime support</li>
+     *     <li>Disabling WRITE_DATES_AS_TIMESTAMPS to serialize dates as ISO strings</li>
+     *     <li>Ignoring unknown JSON fields to allow forward compatibility</li>
+     * </ul>
      *
      * @return configured mapper
      */
     private static ObjectMapper createMapper() {
-        ObjectMapper m = new ObjectMapper();
-        m.registerModule(new JavaTimeModule());
-        m.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-        m.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        return m;
+        ObjectMapper mapper = new ObjectMapper();
+
+        // Support Java 8 date/time types
+        mapper.registerModule(new JavaTimeModule());
+
+        // Write LocalDate/LocalDateTime as ISO-8601 strings, not timestamps
+        mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+
+        // Ignore unknown fields to prevent exceptions when JSON has extra fields
+        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
+        return mapper;
     }
 }

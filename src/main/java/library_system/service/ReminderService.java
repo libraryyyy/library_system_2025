@@ -5,7 +5,7 @@ import library_system.repository.UserRepository;
 import library_system.domain.Loan;
 import library_system.domain.User;
 import library_system.notification.Observer;
-
+import library_system.repository.LoanRepository;
 import java.util.*;
 
 /**

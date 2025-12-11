@@ -1,1 +1,8 @@
-[ ]
+[ {
+  "username" : "testUser",
+  "password" : "pass",
+  "email" : "testUser@example.com",
+  "fineBalance" : 0.0,
+  "name" : "testUser",
+  "validEmail" : true
+} ]
