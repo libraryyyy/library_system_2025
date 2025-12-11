@@ -3,7 +3,6 @@ package library_system.notification;
 import jakarta.mail.Message;
 import jakarta.mail.Session;
 import jakarta.mail.Transport;
-import jakarta.mail.internet.MimeMessage;
 import library_system.domain.User;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -21,14 +20,12 @@ public class EmailNotifierTest {
 
     @BeforeEach
     void setup() {
-        // Fake SMTP session
         Properties props = new Properties();
         mockSession = Session.getInstance(props);
-
         notifier = new EmailNotifier("sender@gmail.com", "pass12345", mockSession);
     }
 
-    // ---------- Email Validation ----------
+    // ----------- Email validation ----------
     @Test
     void testValidEmailFormat() {
         assertTrue(notifier.isValidEmail("test@example.com"));
@@ -39,7 +36,7 @@ public class EmailNotifierTest {
         assertFalse(notifier.isValidEmail("wrong-email"));
     }
 
-    // ---------- Constructor Branch ----------
+    // ----------- configured() branch ----------
     @Test
     void testNotifierConfigured_True() {
         assertTrue(notifier.isConfigured());
@@ -51,20 +48,35 @@ public class EmailNotifierTest {
         assertFalse(n.isConfigured());
     }
 
-    // ---------- notify(): Branch 1 → Not Configured ----------
+    // ----------- Constructor using System.getenv() ----------
+    @Test
+    void testEnvConstructor_NotConfigured() {
+        EmailNotifier n = new EmailNotifier(null, null, null);
+        assertFalse(n.isConfigured());
+    }
+
+    @Test
+    void testEnvConstructor_Configured() {
+        Session s = Session.getInstance(new Properties());
+        EmailNotifier n = new EmailNotifier("sender@gmail.com", "12345678", s);
+        assertTrue(n.isConfigured());
+    }
+
+
+    // ----------- notify(): not configured ----------
     @Test
     void testNotify_notConfigured() {
         EmailNotifier n = new EmailNotifier("", "", null);
         assertDoesNotThrow(() -> n.notify(new User(), "msg"));
     }
 
-    // ---------- notify(): Branch 2 → user = null ----------
+    // ----------- notify(): user null ----------
     @Test
     void testNotify_userNull() {
         assertDoesNotThrow(() -> notifier.notify(null, "msg"));
     }
 
-    // ---------- notify(): Branch 3 → user email = null ----------
+    // ----------- notify(): email null ----------
     @Test
     void testNotify_userEmailNull() {
         User u = new User();
@@ -72,15 +84,15 @@ public class EmailNotifierTest {
         assertDoesNotThrow(() -> notifier.notify(u, "msg"));
     }
 
-    // ---------- notify(): Branch 4 → user email blank ----------
+    // ----------- notify(): blank email ----------
     @Test
     void testNotify_userEmailBlank() {
         User u = new User();
-        u.setEmail("  ");  // blank email
+        u.setEmail("   ");
         assertDoesNotThrow(() -> notifier.notify(u, "msg"));
     }
 
-    // ---------- notify(): Branch 5 → invalid regex ----------
+    // ----------- notify(): invalid regex ----------
     @Test
     void testNotify_invalidEmailFormat() {
         User u = new User();
@@ -88,14 +100,15 @@ public class EmailNotifierTest {
         assertDoesNotThrow(() -> notifier.notify(u, "msg"));
     }
 
-
-    // ---------- notify(): Branch 7 → Transport.send successful ----------
+    // ----------- notify(): successful send ----------
     @Test
     void testNotify_successfulSend() {
+
         User u = new User();
         u.setEmail("valid@example.com");
 
         try (MockedStatic<Transport> mocked = mockStatic(Transport.class)) {
+
             mocked.when(() -> Transport.send(any(Message.class)))
                     .then(inv -> {
                         System.out.println("Mock send OK");
@@ -108,13 +121,15 @@ public class EmailNotifierTest {
         }
     }
 
-    // ---------- notify(): Branch 8 → Exception inside Transport.send ----------
+    // ----------- notify(): Transport throws ----------
     @Test
     void testNotify_sendThrowsException() {
+
         User u = new User();
         u.setEmail("valid@example.com");
 
         try (MockedStatic<Transport> mocked = mockStatic(Transport.class)) {
+
             mocked.when(() -> Transport.send(any(Message.class)))
                     .thenThrow(new RuntimeException("SMTP error"));
 

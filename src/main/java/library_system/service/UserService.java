@@ -3,6 +3,9 @@ package library_system.service;
 import library_system.repository.UserRepository;
 import library_system.repository.LoanRepository;
 import library_system.domain.User;
+import library_system.domain.*;
+
+import java.time.LocalDate;
 
 /**
  * Service handling user registration, authentication, and removal.
@@ -78,6 +81,35 @@ public class UserService {
         UserRepository.saveToFile();
 
         return "User successfully unregistered.";
+    }
+
+    public boolean returnItem(User user, Book book) {
+        if (user == null || book == null) return false;
+
+        Loan loan = LoanRepository.findActiveLoan(user, book);
+        if (loan == null) return false;
+
+        // 1. increase quantity
+        book.setQuantity(book.getQuantity() + 1);
+
+        // 2. calculate fine if overdue
+        double fine = 0;
+        if (loan.isOverdue()) {
+            long daysLate = loan.getBorrowedDate().until(LocalDate.now()).getDays()
+                    - book.getBorrowDuration();
+
+            if (daysLate > 0) {
+                fine = daysLate * 1.0; // 1$ per day (example)
+                user.addFine(fine);
+                loan.setFineAmount((int) fine);
+            }
+        }
+
+        // 3. mark loan returned
+        loan.setReturned(true);
+        LoanRepository.saveToFile();
+
+        return true;
     }
 
     /**

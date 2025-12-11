@@ -24,11 +24,15 @@ public class BorrowServiceTest {
         // reset repositories
         BookRepository.getBooks().clear();
         CDRepository.getAll().clear();
-        LoanRepository.clear(); // استخدام دالة clear الخاصة بـ LoanRepository
+        LoanRepository.clear();
         UserRepository.getUsers().clear();
 
         UserRepository.getUsers().add(user);
     }
+
+    // ------------------------------------------------------------
+    // Borrow Tests
+    // ------------------------------------------------------------
 
     @Test
     public void testBorrowBookSuccess() {
@@ -38,9 +42,9 @@ public class BorrowServiceTest {
 
         boolean result = service.borrowBookInstance(user, book);
 
-        assertTrue(result, "Borrow should succeed");
-        assertEquals(1, book.getQuantity(), "Book quantity should decrease by 1");
-        assertEquals(1, LoanRepository.getAllLoans().size(), "Only one loan should exist");
+        assertTrue(result);
+        assertEquals(1, book.getQuantity());
+        assertEquals(1, LoanRepository.getAllLoans().size());
     }
 
     @Test
@@ -51,8 +55,8 @@ public class BorrowServiceTest {
 
         boolean result = service.borrowBookInstance(user, book);
 
-        assertFalse(result, "Borrow should fail because book is out of stock");
-        assertEquals(0, book.getQuantity(), "Book quantity should remain 0");
+        assertFalse(result);
+        assertEquals(0, book.getQuantity());
     }
 
     @Test
@@ -63,13 +67,13 @@ public class BorrowServiceTest {
 
         // create overdue loan
         Loan loan = new Loan(user, book);
-        loan.setBorrowedDate(LocalDate.now().minusDays(30));
+        loan.setBorrowedDate(LocalDate.now().minusDays(30)); // overdue
         LoanRepository.addLoan(loan);
 
-        assertTrue(loan.isOverdue(), "Loan should be overdue");
+        assertTrue(loan.isOverdue());
 
         boolean result = service.borrowBookInstance(user, book);
-        assertFalse(result, "Borrow should fail because user has overdue loans");
+        assertFalse(result);
     }
 
     @Test
@@ -79,11 +83,15 @@ public class BorrowServiceTest {
         BookRepository.getBooks().add(book);
 
         // first borrow
-        assertTrue(service.borrowBookInstance(user, book), "First borrow should succeed");
+        assertTrue(service.borrowBookInstance(user, book));
 
-        // second borrow -> should fail because active loan exists
-        assertFalse(service.borrowBookInstance(user, book), "Second borrow should fail due to active loan");
+        // second should fail
+        assertFalse(service.borrowBookInstance(user, book));
     }
+
+    // ------------------------------------------------------------
+    // Return Tests
+    // ------------------------------------------------------------
 
     @Test
     public void testReturnFailsNoActiveLoan() {
@@ -93,6 +101,65 @@ public class BorrowServiceTest {
 
         boolean result = service.returnItem(user, book);
 
-        assertFalse(result, "Return should fail because user has no active loan for this book");
+        assertFalse(result);
+    }
+
+    @Test
+    public void testReturnSuccess_NoFine() {
+        Book book = new Book("999", "Algorithms", "CLRS");
+        book.setQuantity(1);
+        BookRepository.getBooks().add(book);
+
+        Loan loan = new Loan(user, book);
+        loan.setBorrowedDate(LocalDate.now()); // no overdue
+        LoanRepository.addLoan(loan);
+
+        boolean result = service.returnItem(user, book);
+
+        assertTrue(result);
+        assertEquals(2, book.getQuantity());
+        assertTrue(loan.isReturned(), "Loan must be marked returned");
+    }
+
+    @Test
+    public void testReturnSuccess_WithFine() {
+
+        LoanRepository.clear();
+        BookRepository.clear();
+
+        Book book = new Book("222", "Clean Code", "Martin");
+        book.setQuantity(1);
+        BookRepository.getBooks().add(book);
+
+        Loan loan = new Loan(user, book);
+
+        // Important: make it overdue!
+        loan.setBorrowedDate(LocalDate.now().minusDays(30)); // overdue: 30 - 28 = 2 days
+        LoanRepository.addLoan(loan);
+
+        double previousFine = user.getFineBalance();
+
+        boolean result = service.returnItem(user, book);
+
+        assertTrue(result);
+        assertEquals(2, book.getQuantity());
+        assertTrue(loan.isReturned());
+        assertTrue(user.getFineBalance() > previousFine, "User must receive additional fine");
+    }
+
+
+    @Test
+    public void testReturnFails_ItemInsideLoanIsNull() {
+        Book book = new Book("333", "DB Systems", "Raghu");
+        book.setQuantity(1);
+        BookRepository.getBooks().add(book);
+
+        Loan loan = new Loan(user, book);
+        loan.setItem(null); // corrupt loan
+        LoanRepository.addLoan(loan);
+
+        boolean result = service.returnItem(user, book);
+
+        assertFalse(result, "Return must fail when internal item is null");
     }
 }

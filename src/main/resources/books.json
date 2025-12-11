@@ -1,8 +1,8 @@
 [ {
   "mediaType" : "BOOK",
-  "title" : "77",
-  "author" : "AI",
-  "isbn" : "Russell",
-  "quantity" : 1,
+  "title" : "222",
+  "author" : "Clean Code",
+  "isbn" : "Martin",
+  "quantity" : 2,
   "borrowDuration" : 28
 } ]
